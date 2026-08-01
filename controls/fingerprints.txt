@@ -1,0 +1,10 @@
+# بصمات ملفات الضوابط — القسم 12.6
+# لا يُحرَّر يدوياً. وَلِّده بـ: python3 tools/check_controls.py --update
+# تحديثه فعل متعمّد يظهر في المراجعة — وهذا هو الغرض منه.
+
+d819bd30fb37bf890c35b5317ff5e774dd93c1b322217f995a94ad91e9a9c1cd  .github/workflows/controls.yml
+83b703bfc1e09d3edf4e63834ffd819027e7c012f8a978913683ec089e462914  ARCHITECTURE.md
+6c20ec35d771e34bc3ab11667133812024a44cd9c81ddabd68c1569f8510dbb0  CLAUDE.md
+ad688907b17e4b66cf88873ecbe7bc34fb971b40ab095538f45a723638b2f5d0  controls/budgets.json
+845fd6ae459351e35e080ab86db9c63ece71dbdbddc1b6829d30f2f0fc7130d8  controls/schema.json
+b6c943d2e8de722167cfb73dc6dd60ebc9abd7eb2f9b490fdf28dfcb903cfee2  tools/check_controls.py

@@ -1,0 +1,114 @@
+{
+  "$comment": [
+    "عقد الحقول بين blog-content و blog-build — المصدر الواحد.",
+    "يقرأ منه: سكربت التحقق قبل البناء، وإعداد لوحة Sveltia، و ARCHITECTURE.md.",
+    "تعديل هذا الملف يتطلب تحديث controls/fingerprints.txt في نفس العملية،",
+    "وإلا فشل البناء. راجع tools/check_controls.py.",
+    "",
+    "رسائل الخطأ بالعربية عمداً — الكاتب غير تقني ويقرؤها هو."
+  ],
+
+  "version": 1,
+
+  "languages": {
+    "default": "en",
+    "$comment_default": "قرار بند صفر 2026-08-01: الإنجليزية بلا بادئة، مطابقةً للموقع",
+    "available": ["en", "ar"],
+    "paths": { "en": "/blog/", "ar": "/blog/ar/" },
+    "x_default": "en"
+  },
+
+  "bundle": {
+    "$comment": "حزمة الصفحة — القسم 10. الصور داخل مجلد المقال حصراً، لا مجلد صور عام",
+    "path": "content/blog/<slug>/",
+    "index_file": "index.<lang>.md",
+    "image_formats": ["webp", "avif", "jpg", "png"],
+    "max_image_bytes": 512000,
+    "max_image_error_ar": "الصورة «{name}» حجمها {actual} والحد الأقصى 500 كيلوبايت. اضغطها من اللوحة عند الرفع ثم أعد المحاولة."
+  },
+
+  "fields": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "min_length": 10,
+      "max_length": 70,
+      "error_ar": "العنوان يجب أن يكون بين 10 و70 محرفاً. عنوانك الآن {actual} محرفاً."
+    },
+    "description": {
+      "type": "string",
+      "required": true,
+      "min_length": 50,
+      "max_length": 160,
+      "error_ar": "الوصف التعريفي يجب أن يكون بين 50 و160 محرفاً — هذا ما يظهر في نتائج البحث. وصفك الآن {actual} محرفاً."
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "max_length": 60,
+      "locked_after_first_publish": true,
+      "$comment": "القسم 8.1: الرابط بعد النشر لا يتغيّر. تغييره إجراء استثنائي موثّق مع 301",
+      "error_ar": "الرابط يجب أن يكون حروفاً إنجليزية صغيرة وأرقاماً وشرطات فقط، مثل: why-ad-campaigns-fail"
+    },
+    "date": {
+      "type": "date",
+      "required": true,
+      "auto": true
+    },
+    "lastmod": {
+      "type": "date",
+      "required": false,
+      "auto": true
+    },
+    "draft": {
+      "type": "boolean",
+      "required": true,
+      "default": true,
+      "$comment": "افتراضي true — لا يُنشر شيء بالخطأ"
+    },
+    "archived": {
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "$comment": "القسم 12.5: بديل الحذف. يُستبعد من الموقع ويبقى في المحتوى"
+    },
+    "categories": {
+      "type": "list",
+      "required": true,
+      "min_items": 1,
+      "error_ar": "اختر تصنيفاً واحداً على الأقل للمقال."
+    },
+    "featured_image": {
+      "type": "path",
+      "required": true,
+      "must_be_in_bundle": true,
+      "error_ar": "المقال يحتاج صورة مشاركة — هي ما يظهر عند مشاركة الرابط في واتساب وتويتر."
+    },
+    "featured_image_alt": {
+      "type": "string",
+      "required": true,
+      "min_length": 1,
+      "$comment": "القسم 8.2: النص البديل إلزامي، والبناء يفشل بدونه",
+      "error_ar": "اكتب وصفاً مختصراً للصورة (النص البديل) — يقرؤه فاقدو البصر ومحركات البحث."
+    }
+  },
+
+  "categories": {
+    "$comment": "الخدمات الستة من hasOfferCatalog في سكيما zero2one.sa — الأسماء العربية منقولة حرفياً لضمان التطابق",
+    "items": [
+      { "slug": "web-design",            "en": "Website Design & Development",              "ar": "تصميم وتطوير المواقع" },
+      { "slug": "seo",                   "en": "Search Engine Optimization (SEO)",          "ar": "تحسين محركات البحث (SEO)" },
+      { "slug": "advertising",           "en": "Advertising Campaign Management",           "ar": "إدارة الحملات الإعلانية" },
+      { "slug": "brand-identity",        "en": "Brand Identity Development",                "ar": "تطوير الهوية التجارية" },
+      { "slug": "social-media",          "en": "Social Media Management & Content Creation", "ar": "إدارة وسائل التواصل وصناعة المحتوى" },
+      { "slug": "ecommerce",             "en": "E-commerce & Custom Systems Development",   "ar": "تطوير المتاجر الإلكترونية والأنظمة المخصّصة" }
+    ]
+  },
+
+  "filenames": {
+    "$comment": "القسم 12.2: قيود صارمة على أسماء الملفات",
+    "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$",
+    "error_ar": "اسم الملف «{name}» غير مقبول. استخدم حروفاً إنجليزية صغيرة وأرقاماً وشرطات فقط، بلا مسافات."
+  }
+}

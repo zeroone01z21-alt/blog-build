@@ -1,0 +1,30 @@
+# فحص بصمة الضوابط — القسم 12.6
+#
+# يعمل على كل دفعة وكل طلب دمج. فشله يمنع الدمج إلى main.
+# لا يبني شيئاً ولا يصل لأي سر — فحص نزاهة فقط.
+name: controls
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# القسم 12.3: الرموز قراءة فقط افتراضياً
+permissions:
+  contents: read
+
+concurrency:
+  group: controls-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fingerprint:
+    name: بصمة مزانة الضوابط
+    runs-on: ubuntu-latest
+    steps:
+      # مثبَّت ببصمة النسخة، لا بوسم متحرك — v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: التحقق من بصمات ملفات الضوابط
+        run: python3 tools/check_controls.py
