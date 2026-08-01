@@ -2,6 +2,7 @@
 # لا يُحرَّر يدوياً. وَلِّده بـ: python3 tools/check_controls.py --update
 # تحديثه فعل متعمّد يظهر في المراجعة — وهذا هو الغرض منه.
 
+26bb4e98cdc09aa0f1dca4f727b71c404cde2c6543884609cb1a15abd23c5128  .github/workflows/build.yml
 d819bd30fb37bf890c35b5317ff5e774dd93c1b322217f995a94ad91e9a9c1cd  .github/workflows/controls.yml
 83b703bfc1e09d3edf4e63834ffd819027e7c012f8a978913683ec089e462914  ARCHITECTURE.md
 6c20ec35d771e34bc3ab11667133812024a44cd9c81ddabd68c1569f8510dbb0  CLAUDE.md

@@ -1,0 +1,42 @@
+# بناء المدونة — القسم 6
+#
+# يُشغَّل من مستودع المحتوى عبر workflow_dispatch.
+#
+# لماذا workflow_dispatch لا repository_dispatch (تصحيح للقسم 6.1):
+#   repository_dispatch يتطلب صلاحية contents:write على هذا المستودع — أي
+#   القدرة على تعديل قوالبه وميزانياته. وهذا يناقض القسم 6.2 الذي يفرض
+#   actions:write فقط. أُثبت عملياً 2026-08-02: الاستدعاء رجع 403.
+#   workflow_dispatch يحتاج actions:write وحدها، فيحقق الشرطين معاً.
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: سبب التشغيل
+        required: false
+        default: حفظ في مستودع المحتوى
+
+permissions:
+  contents: read
+
+# القسم 6.3: دفعة جديدة تُلغي البناء الجاري.
+# 30 حفظة متتابعة تُنتج بناءات قليلة لا 30.
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: بناء ونشر
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: التحقق من بصمات الضوابط
+        run: python3 tools/check_controls.py
+
+      - name: هيكل فقط — لا بناء بعد
+        run: |
+          echo "السبب: ${{ inputs.reason }}"
+          echo "بوابة المرحلة 0 لم تُجتَز — لا قوالب Hugo بعد."
