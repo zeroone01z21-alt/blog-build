@@ -1,0 +1,83 @@
+# مرآة النسخ الاحتياطي — بند 14 · القسم 15.3
+#
+# ينسخ المستودعات الثلاثة أسبوعيًّا إلى Codeberg.
+#
+# لماذا مستضيف آخر لا نسخة ثانية على GitHub:
+#   المستودعات الثلاثة على منصة واحدة تحت حساب واحد. تعليق الحساب — لأي سبب،
+#   ولو خطأً — يعني فقدان كل شيء في اللحظة نفسها. Codeberg مؤسسة غير ربحية
+#   في ألمانيا: شركة وقوانين وبنية مختلفة، فلا تسقط الاثنتان في حدث واحد.
+#
+# لماذا سير عمل لا مرآة تلقائية من Codeberg:
+#   جُرّب في 2026-08-03. Codeberg تقيّد مرايا السحب الدورية (موارد محدودة)،
+#   وخانة "This repository will be a mirror" غير متاحة في نموذجَي الهجرة.
+#   فالدفع من هنا هو الخيار المتبقي.
+#
+# الاعتراف الواجب: هذا يجعل النسخة الاحتياطية تعتمد جزئيًّا على GitHub Actions
+#   — أي على المنصة التي تحمي منها. لذلك الطبقة الثانية في القسم 15.3 ليست
+#   ترفًا: نسخة محلية شهرية على جهاز المالك، وقرص خارجي كل ربع سنة.
+name: mirror
+
+on:
+  schedule:
+    - cron: '17 3 * * 0'      # كل أحد 03:17 UTC — ساعة هادئة تقلّل التزاحم
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror
+  cancel-in-progress: false   # لا نقطع نسخًا جاريًا
+
+jobs:
+  mirror:
+    name: نسخ إلى Codeberg
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false        # فشل مستودع لا يمنع نسخ الباقي
+      matrix:
+        repo: [blog-content, blog-build, blog-deploy]
+    steps:
+      - name: نسخ ${{ matrix.repo }}
+        env:
+          TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          SRC: https://github.com/zeroone01z21-alt/${{ matrix.repo }}.git
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::السر CODEBERG_TOKEN غير مضبوط في blog-build."
+            exit 1
+          fi
+
+          # المستودع المصدر عام، فالاستنساخ بلا مصادقة
+          git clone --mirror "$SRC" work.git
+          cd work.git
+
+          # فرع فارغ لا شيء فيه ليُنسخ — ليس خطأ
+          if [ -z "$(git show-ref || true)" ]; then
+            echo "::notice::${{ matrix.repo }} فارغ — لا شيء لنسخه بعد."
+            exit 0
+          fi
+
+          # الرمز في الرابط لا في سطر أمر منفصل، حتى لا يظهر في أي سجل
+          git push --mirror \
+            "https://oauth2:${TOKEN}@codeberg.org/zero2one/${{ matrix.repo }}.git" \
+            2>&1 | sed -E "s#//[^@]*@#//***@#g"
+
+          echo "✅ ${{ matrix.repo }}: $(git rev-parse --short HEAD 2>/dev/null || echo '—')"
+
+  heartbeat:
+    name: إشارة الحياة
+    needs: mirror
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: نتيجة النسخ
+        run: |
+          if [ "${{ needs.mirror.result }}" = "success" ]; then
+            echo "النسخ الأسبوعي تم بنجاح."
+          else
+            echo "::error::فشل النسخ الاحتياطي الأسبوعي (${{ needs.mirror.result }})."
+            echo "القسم 14.1: الفشل الصامت هو الخطر — راجع السجل أعلاه."
+            exit 1
+          fi
