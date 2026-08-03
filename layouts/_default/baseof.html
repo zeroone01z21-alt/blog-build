@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="{{ .Lang }}" dir="{{ if eq .Lang "ar" }}rtl{{ else }}ltr{{ end }}">
+<head>
+  {{ partial "head.html" . }}
+</head>
+<body>
+  <header class="blog-head">
+    <a class="brand" href="https://zero2one.sa/">ZERO <span>2</span> ONE</a>
+    <nav><a href="{{ if eq .Lang "ar" }}/blog/ar/{{ else }}/blog/{{ end }}">{{ .Site.Title }}</a></nav>
+  </header>
+  <main>{{ block "main" . }}{{ end }}</main>
+  <footer class="blog-foot">
+    <p>&copy; {{ now.Year }} ZERO 2 ONE — <a href="https://zero2one.sa/">zero2one.sa</a></p>
+  </footer>
+</body>
+</html>

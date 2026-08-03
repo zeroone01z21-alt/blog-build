@@ -1,0 +1,81 @@
+{{- /*
+  طبقة SEO — القسم 8.2
+  كل عنصر هنا إلزامي، والبناء يفشل عند غياب أيٍّ منه (tools/check_seo.py).
+*/ -}}
+{{- $isPost := eq .Kind "page" -}}
+{{- $img := cond (eq .Lang "ar") .Site.Params.defaultImageAr .Site.Params.defaultImage -}}
+{{- with .Params.featured_image }}{{ $img = (printf "%s%s" $.Permalink .) }}{{ end -}}
+{{- $desc := .Description | default .Site.Params.description | default .Summary -}}
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} — {{ .Site.Title }}{{ end }}</title>
+<meta name="description" content="{{ $desc | plainify | truncate 160 "" }}">
+<link rel="canonical" href="{{ .Permalink }}">
+
+{{/* hreflang متبادل + x-default → الإنجليزية (قرار بند صفر) */}}
+{{- range .AllTranslations }}
+<link rel="alternate" hreflang="{{ .Lang }}" href="{{ .Permalink }}">
+{{- end }}
+{{- with .Translations }}{{ end }}
+{{- $en := "" }}{{ range .AllTranslations }}{{ if eq .Lang "en" }}{{ $en = .Permalink }}{{ end }}{{ end }}
+{{- if $en }}
+<link rel="alternate" hreflang="x-default" href="{{ $en }}">
+{{- end }}
+
+{{/* بطاقات المشاركة — القسم 8.5: عنوان وصورة خاصان بكل مقال */}}
+<meta property="og:type" content="{{ if $isPost }}article{{ else }}website{{ end }}">
+<meta property="og:site_name" content="{{ .Site.Params.organization }}">
+<meta property="og:locale" content="{{ if eq .Lang "ar" }}ar_SA{{ else }}en_US{{ end }}">
+<meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}">
+<meta property="og:description" content="{{ $desc | plainify | truncate 160 "" }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:image" content="{{ $img }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ .Params.featured_image_alt | default .Site.Params.organization }}">
+{{- if $isPost }}
+<meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
+<meta property="article:modified_time" content="{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}">
+{{- end }}
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}">
+<meta name="twitter:description" content="{{ $desc | plainify | truncate 160 "" }}">
+<meta name="twitter:image" content="{{ $img }}">
+
+{{/* الخطوط مستضافة ذاتيًّا — تحميل مسبق للوزن الأساسي فقط (بند 13) */}}
+<link rel="preload" as="font" type="font/woff2" crossorigin
+      href="/blog/fonts/{{ if eq .Lang "ar" }}cairo-arabic-400{{ else }}nm-400{{ end }}.woff2">
+<link rel="stylesheet" href="/blog/fonts/fonts.css">
+<link rel="stylesheet" href="/blog/css/blog.css">
+
+{{/* بيانات منظّمة: Article + BreadcrumbList، مربوطة بكيان المنظمة على الموقع */}}
+{{- if $isPost }}
+<script type="application/ld+json">
+{{ dict
+  "@context" "https://schema.org"
+  "@type" "BlogPosting"
+  "headline" .Title
+  "description" ($desc | plainify | truncate 160 "")
+  "image" (slice $img)
+  "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00")
+  "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00")
+  "inLanguage" .Lang
+  "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink)
+  "author" (dict "@id" .Site.Params.organizationId)
+  "publisher" (dict "@id" .Site.Params.organizationId)
+  | jsonify (dict "indent" "  ") | safeJS }}
+</script>
+<script type="application/ld+json">
+{{ dict
+  "@context" "https://schema.org"
+  "@type" "BreadcrumbList"
+  "itemListElement" (slice
+    (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" "https://zero2one.sa/")
+    (dict "@type" "ListItem" "position" 2 "name" .Site.Title "item" (printf "%s" .Site.BaseURL))
+    (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink))
+  | jsonify (dict "indent" "  ") | safeJS }}
+</script>
+{{- end }}

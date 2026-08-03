@@ -1,0 +1,59 @@
+# إعداد Hugo — المدونة
+#
+# ⚠️ هذا إعداد **إثبات** (بند 1 من أسبوع الإثبات)، لا إعداد المرحلة 2.
+# غرضه صفحة واحدة بنسق كامل نتحقق منها قبل بناء القوالب الحقيقية.
+
+baseURL = 'https://zero2one.sa/blog/'
+title = 'مدونة ZERO 2 ONE'
+enableRobotsTXT = false          # robots.txt يُدار من جذر النطاق (القسم 8.3)
+enableGitInfo = false
+timeZone = 'Asia/Riyadh'
+summaryLength = 40
+
+# التصنيفات ستُبنى بقوالبها في المرحلة 2؛ الخريطة تُولَّد من أداتنا
+disableKinds = ['taxonomy', 'term']
+
+# قرار بند صفر: الإنجليزية بلا بادئة، العربية ببادئة — مطابقةً للموقع
+defaultContentLanguage = 'en'
+defaultContentLanguageInSubdir = false
+
+[languages]
+  [languages.en]
+    languageCode = 'en'
+    languageName = 'English'
+    languageDirection = 'ltr'
+    weight = 1
+    title = 'ZERO 2 ONE Blog'
+  [languages.ar]
+    languageCode = 'ar'
+    languageName = 'العربية'
+    languageDirection = 'rtl'
+    weight = 2
+    title = 'مدونة ZERO 2 ONE'
+
+[permalinks]
+  # القسم 8.1: بلا تاريخ وبلا تصنيف في المسار.
+  # التاريخ يجعل المقال يبدو قديمًا، والتصنيف يكسر الرابط عند إعادة التصنيف.
+  '/' = '/:slug/'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      # القسم 12.2 — إلزامي. حساب كاتب مخترق يستطيع دسّ HTML خام
+      # يصبح جزءًا دائمًا من كل صفحة.
+      unsafe = false
+  [markup.highlight]
+    noClasses = false
+
+[outputs]
+  home = ['HTML', 'RSS']
+  section = ['HTML', 'RSS']
+  page = ['HTML']
+
+[params]
+  organization = 'ZERO 2 ONE'
+  organizationId = 'https://zero2one.sa/#organization'
+  logo = 'https://zero2one.sa/assets/icons/logo-z2o.svg'
+  defaultImage = 'https://zero2one.sa/assets/images/og-cover.jpg'
+  defaultImageAr = 'https://zero2one.sa/assets/images/og-cover-ar.jpg'
+  ga4 = 'G-Z7XN1NZY47'

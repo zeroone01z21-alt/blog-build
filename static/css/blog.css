@@ -1,0 +1,15 @@
+:root{--ink:#1C1D20;--cream:#FFFDED;--orange:#F9460E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);
+  font-family:'Dennis Sans',system-ui,sans-serif;line-height:1.6}
+html[dir=rtl] body{font-family:'Cairo',system-ui,sans-serif}
+.blog-head,.blog-foot{padding:1.5rem 6vw;display:flex;gap:2rem;align-items:center;justify-content:space-between}
+.brand{font-weight:700;letter-spacing:.02em;text-decoration:none;color:var(--ink)}
+.brand span{color:var(--orange)}
+main{max-width:44rem;margin-inline:auto;padding:2rem 6vw 4rem}
+.eyebrow{color:var(--orange);font-weight:700;margin:0 0 .5rem;font-size:.9rem}
+h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.15;margin:0 0 .75rem}
+.meta{opacity:.7;font-size:.9rem;margin:0 0 2rem}
+img{max-width:100%;height:auto;border-radius:.5rem}
+.body{font-size:1.075rem}
+a{color:var(--orange)}

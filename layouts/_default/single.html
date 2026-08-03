@@ -1,0 +1,14 @@
+{{ define "main" }}
+<article class="post">
+  <p class="eyebrow">{{ range $i, $c := .Params.categories }}{{ if $i }} · {{ end }}{{ $c }}{{ end }}</p>
+  <h1>{{ .Title }}</h1>
+  <p class="meta">
+    <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+    · {{ .ReadingTime }} {{ if eq .Lang "ar" }}دقيقة قراءة{{ else }}min read{{ end }}
+  </p>
+  {{ with .Params.featured_image }}
+  <img src="{{ . }}" alt="{{ $.Params.featured_image_alt }}" width="1200" height="630" loading="eager">
+  {{ end }}
+  <div class="body">{{ .Content }}</div>
+</article>
+{{ end }}
