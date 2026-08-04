@@ -35,7 +35,15 @@ MANIFEST = os.path.join(ROOT, "controls", "fingerprints.txt")
 # كل ما يقع تحت هذه المسارات يُبصَم. إضافة ملف جديد فيها دون تسجيله = فشل،
 # وهذا مقصود: لا يتسلل سير عمل جديد بلا مراجعة.
 GUARDED_DIRS = [".github/workflows", "controls"]
-GUARDED_FILES = ["CLAUDE.md", "ARCHITECTURE.md", "tools/check_controls.py"]
+# البوابات نفسها مبصومة: من يعطّل بوابةً يفعلها في تغيير ظاهر لا صامت.
+GUARDED_FILES = [
+    "CLAUDE.md",
+    "ARCHITECTURE.md",
+    "tools/check_controls.py",
+    "tools/check_deploy_scope.py",   # يمنع لمس ملفات الموقع خارج blog/
+    "tools/check_budgets.py",        # يمنع تآكل الأداء
+    "tools/check_content.py",        # يمنع النشر الناقص
+]
 EXCLUDE = {"controls/fingerprints.txt"}
 
 

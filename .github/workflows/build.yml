@@ -1,12 +1,16 @@
-# بناء المدونة — القسم 6
+# بناء المدونة ونشرها — القسم 6
 #
 # يُشغَّل من مستودع المحتوى عبر workflow_dispatch.
 #
 # لماذا workflow_dispatch لا repository_dispatch (تصحيح للقسم 6.1):
-#   repository_dispatch يتطلب صلاحية contents:write على هذا المستودع — أي
-#   القدرة على تعديل قوالبه وميزانياته. وهذا يناقض القسم 6.2 الذي يفرض
-#   actions:write فقط. أُثبت عملياً 2026-08-02: الاستدعاء رجع 403.
-#   workflow_dispatch يحتاج actions:write وحدها، فيحقق الشرطين معاً.
+#   الثاني يتطلب contents:write على هذا المستودع — أي تعديل قوالبه
+#   وميزانياته، وهو ما وُضع القسم 6.2 لمنعه. أُثبت 2026-08-02: 403.
+#
+# لماذا النشر عبر مستودع الموقع لا FTP (تصحيح للقسم 6.5):
+#   مزامنة Git في Hostinger تنشر محتوى مستودع الموقع إلى public_html
+#   وتحذف ما ليس فيه. في 2026-08-04 محا نشرٌ للموقع مجلد /blog/ كاملًا
+#   وكان يُرفع بـFTP. فلا مفرّ من التسليم داخل المستودع.
+#   العزل المفقود يعوّضه tools/check_deploy_scope.py قبل كل دفعة.
 name: build
 
 on:
@@ -20,23 +24,102 @@ on:
 permissions:
   contents: read
 
-# القسم 6.3: دفعة جديدة تُلغي البناء الجاري.
-# 30 حفظة متتابعة تُنتج بناءات قليلة لا 30.
 concurrency:
   group: build
   cancel-in-progress: true
+
+env:
+  HUGO_VERSION: "0.164.0"
+  HUGO_SHA256: "fea17b8c076f950bb2e9f9486667bdaa29422883888d509d63931c73e8a9b3a4"
 
 jobs:
   build:
     name: بناء ونشر
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: قوالب المدونة
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: المحتوى
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: zeroone01z21-alt/blog-content
+          path: .content-src
 
       - name: التحقق من بصمات الضوابط
         run: python3 tools/check_controls.py
 
-      - name: هيكل فقط — لا بناء بعد
+      - name: تدقيق المحتوى
+        run: python3 tools/check_content.py .content-src/content
+
+      - name: تثبيت Hugo ببصمة الإصدار
         run: |
-          echo "السبب: ${{ inputs.reason }}"
-          echo "بوابة المرحلة 0 لم تُجتَز — لا قوالب Hugo بعد."
+          set -euo pipefail
+          f="hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
+          curl -sSLo "$f" "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/$f"
+          echo "${HUGO_SHA256}  $f" | sha256sum -c -
+          tar -xzf "$f" hugo && sudo mv hugo /usr/local/bin/
+          hugo version
+
+      - name: تجهيز المحتوى
+        run: |
+          set -euo pipefail
+          # العقد يقول content/blog/<slug>/ في مستودع المحتوى، وbaseURL هنا
+          # يحمل /blog/ أصلًا — فلو أبقينا القسم لأنتج /blog/blog/.
+          rm -rf content && mkdir -p content
+          if [ -d .content-src/content/blog ]; then
+            cp -R .content-src/content/blog/. content/
+          fi
+          for f in .content-src/content/_index.*.md; do
+            [ -e "$f" ] && cp "$f" content/ || true
+          done
+          ls -A content | head -20
+
+      - name: البناء
+        run: |
+          set -euo pipefail
+          hugo --gc --minify --destination public
+          test -s public/index.html
+
+      - name: ميزانيات الأداء
+        run: python3 tools/check_budgets.py public
+
+      - name: مستودع الموقع
+        env:
+          TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::السر SITE_REPO_TOKEN غير مضبوط."
+            exit 1
+          fi
+          git clone --depth 1 \
+            "https://x-access-token:${TOKEN}@github.com/01team9639-maker/zero2one-web.git" site \
+            2>&1 | sed -E "s#//[^@]*@#//***@#g"
+
+      - name: استبدال blog/ وحده
+        run: |
+          set -euo pipefail
+          rm -rf site/blog
+          mkdir -p site/blog
+          cp -R public/. site/blog/
+
+      - name: 🔒 حارس النطاق
+        run: python3 tools/check_deploy_scope.py site
+
+      - name: الدفع
+        env:
+          TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd site
+          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "لا تغييرات — الموقع محدَّث أصلًا."
+            exit 0
+          fi
+          git config user.name "ZERO 2 ONE"
+          git config user.email "01team9639@gmail.com"
+          git add blog
+          git commit -q -m "نشر المدونة — ${{ inputs.reason }}"
+          git push -q origin main 2>&1 | sed -E "s#//[^@]*@#//***@#g"
+          echo "✅ نُشر $(git rev-parse --short HEAD)"
