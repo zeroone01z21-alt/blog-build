@@ -1,0 +1,39 @@
+{{- /*
+  صورة page resource متجاوبة. Hugo يولّد AVIF وWebP عند البناء ويحفظ
+  المخرجات في cache، مع أصل الصورة كخيار احتياطي للمتصفحات الأقدم.
+*/ -}}
+{{- $image := .image -}}
+{{- $alt := .alt | default "" -}}
+{{- $class := .class | default "responsive-image" -}}
+{{- $loading := .loading | default "lazy" -}}
+{{- $sizes := .sizes | default "100vw" -}}
+{{- $fetchpriority := .fetchpriority | default "auto" -}}
+
+{{- if reflect.IsImageResourceProcessable $image -}}
+  {{- $widths := slice -}}
+  {{- range (slice 480 800 1200) -}}
+    {{- if le . $image.Width }}{{ $widths = $widths | append . }}{{ end -}}
+  {{- end -}}
+  {{- $maxWidth := math.Min $image.Width 1200 | int -}}
+  {{- $widths = $widths | append $maxWidth | uniq | sort -}}
+  {{- $avifSet := slice -}}
+  {{- $webpSet := slice -}}
+  {{- range $widths -}}
+    {{- $avif := $image.Resize (printf "%dx avif q65" .) -}}
+    {{- $webp := $image.Resize (printf "%dx webp q78" .) -}}
+    {{- $avifSet = $avifSet | append (printf "%s %dw" $avif.RelPermalink $avif.Width) -}}
+    {{- $webpSet = $webpSet | append (printf "%s %dw" $webp.RelPermalink $webp.Width) -}}
+  {{- end -}}
+  {{- $fallback := $image -}}
+  {{- if gt $image.Width 1200 }}{{ $fallback = $image.Resize "1200x" }}{{ end -}}
+  <picture class="responsive-picture">
+    <source type="image/avif" srcset="{{ delimit $avifSet ", " }}" sizes="{{ $sizes }}">
+    <source type="image/webp" srcset="{{ delimit $webpSet ", " }}" sizes="{{ $sizes }}">
+    <img class="{{ $class }}" src="{{ $fallback.RelPermalink }}"
+         alt="{{ $alt }}" width="{{ $fallback.Width }}" height="{{ $fallback.Height }}"
+         loading="{{ $loading }}" decoding="async" fetchpriority="{{ $fetchpriority }}">
+  </picture>
+{{- else -}}
+  <img class="{{ $class }}" src="{{ $image.RelPermalink }}" alt="{{ $alt }}"
+       loading="{{ $loading }}" decoding="async" fetchpriority="{{ $fetchpriority }}">
+{{- end -}}

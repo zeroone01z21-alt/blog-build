@@ -34,17 +34,33 @@ MANIFEST = os.path.join(ROOT, "controls", "fingerprints.txt")
 
 # كل ما يقع تحت هذه المسارات يُبصَم. إضافة ملف جديد فيها دون تسجيله = فشل،
 # وهذا مقصود: لا يتسلل سير عمل جديد بلا مراجعة.
-GUARDED_DIRS = [".github/workflows", "controls"]
+GUARDED_DIRS = [".github/workflows", "controls", "preview/admin"]
 # البوابات نفسها مبصومة: من يعطّل بوابةً يفعلها في تغيير ظاهر لا صامت.
 GUARDED_FILES = [
     "CLAUDE.md",
     "ARCHITECTURE.md",
+    "HANDOFF.md",
+    "WRITER_GUIDE_AR.md",
+    "hugo.toml",                    # عقد الروابط واللغات والتصنيفات وGoldmark
+    "layouts/_default/_markup/render-image.html",  # يمنع صور Markdown الخارجية
+    "layouts/partials/head.html",   # metadata وhreflang وJSON-LD وnoindex
+    "preview/index.html",           # جذر المعاينة لا يدخل فهرس البحث
+    "static/.htaccess",             # 404/301/410 الإنجليزية
+    "static/ar/.htaccess",          # 404/410 العربية
     "tools/check_controls.py",
     "tools/check_deploy_scope.py",   # يمنع لمس ملفات الموقع خارج blog/
     "tools/check_budgets.py",        # يمنع تآكل الأداء
     "tools/check_content.py",        # يمنع النشر الناقص
+    "tools/prepare_content.py",      # يجهز المصدر ويستبعد الحزم المؤرشفة بأمان
+    "tools/generate_cms.py",         # يولّد إعداد اللوحة ودليل الكاتب من العقد
+    "tools/check_cms.py",            # يثبت نسخة Sveltia وعقد لوحة الكاتب
     "tools/check_indexing.py",       # يثبت عقد الخرائط وRSS وIndexNow
+    "tools/check_seo.py",            # يفرض عناصر SEO وhreflang وقواعد الخادم
     "tools/indexnow.py",             # يحصر الإخطار في روابط المدونة المنشورة
+    "tools/wait_for_live.py",        # لا يساوي push بوصول النشر إلى Hostinger
+    "tools/healthcheck.py",          # start/success/fail للمراقب الخارجي الاختياري
+    "tools/backup_local.py",         # النسخة المحلية الشهرية خارج GitHub
+    "tools/sanitize_preview_htaccess.py",  # يحفظ Basic Auth ويزيل Header القديمة
 ]
 EXCLUDE = {"controls/fingerprints.txt"}
 

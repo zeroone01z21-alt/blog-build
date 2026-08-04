@@ -1,0 +1,20 @@
+{{- /*
+  صفحات التصنيفات الإنجليزية مولّدة مباشرة من العقد المركزي؛ لا توجد
+  قائمة ثانية يمكن أن تنحرف عنه عند تغيير اسم أو إضافة تصنيف.
+*/ -}}
+{{- $schema := transform.Unmarshal (os.ReadFile "controls/schema.json") -}}
+{{- range $schema.categories.items -}}
+  {{- $params := dict
+    "category_slug" .slug
+    "intro" .intro_en
+  -}}
+  {{- $page := dict
+    "description" .description_en
+    "kind" "term"
+    "params" $params
+    "path" .slug
+    "title" .en
+    "translationKey" (printf "category-%s" .slug)
+  -}}
+  {{- $.AddPage $page -}}
+{{- end -}}

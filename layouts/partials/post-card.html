@@ -1,0 +1,27 @@
+{{- $post := . -}}
+<li class="card">
+  {{- with $post.Params.featured_image }}
+    {{- with $post.Resources.GetMatch . }}
+      <a class="card-cover-link" href="{{ $post.RelPermalink }}" aria-label="{{ $post.Title }}">
+        {{- partial "responsive-image.html" (dict
+          "image" .
+          "alt" $post.Params.featured_image_alt
+          "class" "card-cover"
+          "loading" "lazy"
+          "sizes" "(max-width: 42rem) calc(100vw - 2rem), 38rem"
+        ) }}
+      </a>
+    {{- end }}
+  {{- end }}
+  {{- with $post.GetTerms "categories" }}
+  <p class="card-cat">
+    {{- range $i, $term := . }}{{ if $i }} <span aria-hidden="true">·</span> {{ end }}<a href="{{ $term.RelPermalink }}">{{ $term.LinkTitle }}</a>{{ end -}}
+  </p>
+  {{- end }}
+  <h2><a href="{{ $post.RelPermalink }}">{{ $post.Title }}</a></h2>
+  <p class="card-desc">{{ $post.Description }}</p>
+  <p class="card-meta">
+    <time datetime="{{ $post.Date.Format "2006-01-02" }}">{{ $post.Date.Format "2006-01-02" }}</time>
+    <span aria-hidden="true">·</span> {{ $post.ReadingTime }} {{ T "readingTime" }}
+  </p>
+</li>

@@ -114,8 +114,10 @@ def check_file(path, schema, problems):
         return
 
     fields = schema["fields"]
-    allowed_cats = {c["en"] for c in schema["categories"]["items"]} | \
-                   {c["ar"] for c in schema["categories"]["items"]}
+    # قيمة التصنيف في front matter هي slug ثابتة لا الاسم المعروض. هكذا
+    # يرتبط المقال العربي والإنجليزي بصفحة أرشيف واحدة مترجمة، ولا يتغيّر
+    # الرابط عند تحسين الصياغة المعروضة في schema.json.
+    allowed_cats = {c["slug"] for c in schema["categories"]["items"]}
 
     for name, rule in fields.items():
         val = fm.get(name)
@@ -144,7 +146,9 @@ def check_file(path, schema, problems):
             if name == "categories":
                 for c in val:
                     if c not in allowed_cats:
-                        bad(f"التصنيف «{c}» غير معروف. اختر من القائمة في اللوحة.")
+                        choices = "، ".join(sorted(allowed_cats))
+                        bad(f"التصنيف «{c}» غير معروف. اختر من القائمة في اللوحة "
+                            f"(القيم المسموحة: {choices}).")
 
         elif rule["type"] == "path" and rule.get("must_be_in_bundle"):
             if "/" in str(val) or str(val).startswith("http"):
@@ -182,6 +186,47 @@ def check_images(directory, schema, problems):
                                      .replace("{actual}", f"{size/1024:.0f} كيلوبايت")))
 
 
+def check_bundle_consistency(directory, problems):
+    """الـslug والتصنيفات والأرشفة عقد واحد بين ترجمات الحزمة."""
+    blog = os.path.join(directory, "blog")
+    if not os.path.isdir(blog):
+        return
+    for name in sorted(os.listdir(blog)):
+        bundle = os.path.join(blog, name)
+        if not os.path.isdir(bundle) or name.startswith("."):
+            continue
+        records = []
+        for filename in sorted(os.listdir(bundle)):
+            if not (filename.startswith("index.") and filename.endswith(".md")):
+                continue
+            path = os.path.join(bundle, filename)
+            with open(path, encoding="utf-8") as handle:
+                fm, _ = parse_front_matter(handle.read())
+            if fm is not None:
+                records.append((path, fm))
+        if not records:
+            continue
+        first_path, first = records[0]
+        expected = {
+            "slug": first.get("slug"),
+            "archived": bool(first.get("archived", False)),
+            "categories": sorted(first.get("categories", [])),
+        }
+        if expected["slug"] != name:
+            problems.append((display(first_path),
+                             f"قيمة slug يجب أن تطابق اسم مجلد الحزمة «{name}»."))
+        for path, fm in records[1:]:
+            actual = {
+                "slug": fm.get("slug"),
+                "archived": bool(fm.get("archived", False)),
+                "categories": sorted(fm.get("categories", [])),
+            }
+            for field in expected:
+                if actual[field] != expected[field]:
+                    problems.append((display(path),
+                                     f"الحقل «{field}» يجب أن يتطابق بين كل ترجمات الحزمة."))
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     directory = args[0] if args else os.path.join(ROOT, "content")
@@ -200,6 +245,7 @@ def main():
             if f.endswith(".md"):
                 count += 1
                 check_file(os.path.join(base, f), schema, problems)
+    check_bundle_consistency(directory, problems)
     check_images(directory, schema, problems)
 
     if as_json:

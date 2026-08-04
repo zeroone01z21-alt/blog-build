@@ -1,9 +1,9 @@
 {{ define "main" }}
 <article class="post">
   <header class="post-head">
-    {{- with .Params.categories }}
+    {{- with .GetTerms "categories" }}
     <p class="post-cats">
-      {{- range $i, $c := . }}{{ if $i }} <span aria-hidden="true">·</span> {{ end }}{{ $c }}{{ end -}}
+      {{- range $i, $term := . }}{{ if $i }} <span aria-hidden="true">·</span> {{ end }}<a href="{{ $term.RelPermalink }}">{{ $term.LinkTitle }}</a>{{ end -}}
     </p>
     {{- end }}
     <h1>{{ .Title }}</h1>
@@ -19,12 +19,18 @@
   </header>
 
   {{- with .Params.featured_image }}{{ with $.Resources.GetMatch . }}
-  <img class="post-cover" src="{{ .RelPermalink }}" alt="{{ $.Params.featured_image_alt }}"
-       width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
-  {{ end }}{{ end }}
+    {{- partial "responsive-image.html" (dict
+      "image" .
+      "alt" $.Params.featured_image_alt
+      "class" "post-cover"
+      "loading" "eager"
+      "fetchpriority" "high"
+      "sizes" "(max-width: 42rem) calc(100vw - 2rem), 38rem"
+    ) }}
+  {{- end }}{{ end }}
 
   <div class="post-body">{{ .Content }}</div>
 
-  <p class="post-back"><a href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">&larr; {{ T "backToBlog" }}</a></p>
+  <p class="post-back"><a href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "backArrow" }} {{ T "backToBlog" }}</a></p>
 </article>
 {{ end }}

@@ -1,0 +1,5 @@
+{
+  "backend_repo": "zeroone01z21-alt/blog-content",
+  "backend_branch": "main",
+  "oauth_base_url": "OWNER_MUST_SET_OAUTH_BASE_URL"
+}

@@ -1,0 +1,176 @@
+# مولّد آليًا من controls/schema.json وpreview/admin/settings.json.
+# لا تعدّل هذا الملف يدويًا؛ شغّل: python3 tools/generate_cms.py
+
+backend:
+  name: "github"
+  repo: "zeroone01z21-alt/blog-content"
+  branch: "main"
+  base_url: "OWNER_MUST_SET_OAUTH_BASE_URL"
+  auth_methods:
+    - "oauth"
+app_title: "كتابة مدونة ZERO 2 ONE"
+i18n:
+  structure: "multiple_files"
+  locales:
+    - "en"
+    - "ar"
+  default_locale: "en"
+  initial_locales: "all"
+slug:
+  encoding: "ascii"
+  sanitize_replacement: "-"
+  maxlength: 60
+  trim: true
+  lowercase: true
+  timezone: "local"
+output:
+  omit_empty_optional_fields: true
+  yaml:
+    quote: "double"
+    indent_size: 2
+    indent_sequences: true
+media_libraries:
+  all:
+    max_file_size: 512000
+    slugify_filename: true
+    transformations:
+      raster_image:
+        format: "webp"
+        quality: 85
+        width: 1600
+        height: 1600
+collections:
+  -
+    name: "posts"
+    label: "المقالات"
+    label_singular: "مقال"
+    icon: "article"
+    folder: "content/blog"
+    path: "{{slug}}/index"
+    slug: "{{fields.slug}}"
+    identifier_field: "title"
+    format: "yaml-frontmatter"
+    extension: "md"
+    media_folder: ""
+    public_folder: ""
+    i18n: true
+    create: true
+    delete: false
+    duplicate: false
+    summary: "{{title}} · {{categories}} · {{locales}}"
+    fields:
+      -
+        name: "title"
+        label: "عنوان المقال"
+        required: true
+        i18n: true
+        minlength: 10
+        maxlength: 70
+        widget: "string"
+      -
+        name: "description"
+        label: "الوصف الذي يظهر في نتائج البحث"
+        required: true
+        i18n: true
+        minlength: 50
+        maxlength: 160
+        widget: "string"
+      -
+        name: "slug"
+        label: "الرابط القصير بالإنجليزية"
+        required: true
+        i18n: "duplicate"
+        hint: "استخدم حروفًا إنجليزية صغيرة وأرقامًا وشرطات. لا تغيّره بعد أول نشر؛ تغيير الرابط يحتاج تحويل 301 من المالك."
+        maxlength: 60
+        pattern:
+          - "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          - "الرابط يجب أن يكون حروفاً إنجليزية صغيرة وأرقاماً وشرطات فقط، مثل: why-ad-campaigns-fail"
+        widget: "string"
+      -
+        name: "date"
+        label: "تاريخ النشر"
+        required: true
+        i18n: "duplicate"
+        hint: "يُملأ تلقائيًا عند إنشاء المقال. عدّله فقط عند جدولة تاريخ النشر."
+        widget: "datetime"
+        default: "{{now}}"
+      -
+        name: "lastmod"
+        label: "تاريخ آخر تعديل"
+        required: false
+        i18n: "duplicate"
+        hint: "حدّثه عند تعديل مقال منشور. اتركه فارغًا للمقال الجديد."
+        widget: "datetime"
+      -
+        name: "draft"
+        label: "حالة النشر"
+        required: true
+        i18n: "duplicate"
+        hint: "مفعّل = مسودة لا تظهر في الموقع الحي. غير مفعّل = منشور، ما دام مفتاح الأرشفة غير مفعّل."
+        widget: "boolean"
+        default: true
+        before_input: "منشور"
+        after_input: "مسودة"
+      -
+        name: "archived"
+        label: "أرشفة المقال"
+        required: false
+        i18n: "duplicate"
+        hint: "فعّله لإخفاء المقال مع إبقائه محفوظًا. الأرشفة هي بديل الحذف."
+        widget: "boolean"
+        default: false
+        before_input: "نشط"
+        after_input: "مؤرشف"
+      -
+        name: "categories"
+        label: "التصنيفات"
+        required: true
+        i18n: "duplicate"
+        hint: "اختر تصنيفًا واحدًا على الأقل. الأسماء ثابتة وتُعرض للزائر بلغته."
+        widget: "select"
+        multiple: true
+        min: 1
+        options:
+          -
+            label: "Website Design & Development — تصميم وتطوير المواقع"
+            value: "web-design"
+          -
+            label: "Search Engine Optimization (SEO) — تحسين محركات البحث (SEO)"
+            value: "seo"
+          -
+            label: "Advertising Campaign Management — إدارة الحملات الإعلانية"
+            value: "advertising"
+          -
+            label: "Brand Identity Development — تطوير الهوية التجارية"
+            value: "brand-identity"
+          -
+            label: "Social Media Management & Content Creation — إدارة وسائل التواصل وصناعة المحتوى"
+            value: "social-media"
+          -
+            label: "E-commerce & Custom Systems Development — تطوير المتاجر الإلكترونية والأنظمة المخصّصة"
+            value: "ecommerce"
+      -
+        name: "featured_image"
+        label: "صورة المشاركة"
+        required: true
+        i18n: true
+        hint: "ارفع صورة من جهازك. تُحفظ داخل مجلد المقال وتُضغط في المتصفح؛ الروابط الخارجية معطلة."
+        widget: "image"
+        choose_url: false
+        multiple: false
+        accept: "image/webp,image/avif,image/jpeg,image/png"
+      -
+        name: "featured_image_alt"
+        label: "وصف صورة المشاركة"
+        required: true
+        i18n: true
+        hint: "اكتب ما يظهر في الصورة بجملة قصيرة مفيدة، من دون «صورة لـ»."
+        minlength: 1
+        widget: "string"
+      -
+        name: "body"
+        label: "نص المقال"
+        widget: "richtext"
+        required: true
+        i18n: true
+        hint: "اكتب المقال منظمًا بعناوين فرعية وقوائم. لا تلصق HTML خامًا."

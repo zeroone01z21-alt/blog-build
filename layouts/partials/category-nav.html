@@ -1,0 +1,12 @@
+{{- with .Site.GetPage "/categories" -}}
+  {{- with .Pages -}}
+  <nav class="category-nav" aria-label="{{ T "categories" }}">
+    <p class="category-nav-title">{{ T "browseCategories" }}</p>
+    <ul>
+      {{- range .ByTitle }}
+      <li><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a></li>
+      {{- end }}
+    </ul>
+  </nav>
+  {{- end -}}
+{{- end -}}

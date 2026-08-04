@@ -228,14 +228,27 @@ def validate_rss(
                   f"رابط RSS الذاتي خاطئ: {path}")
 
     items = channel.findall("item")
-    check.require(bool(items) or len(sitemap_urls) == 1,
-                  f"RSS فارغ رغم وجود صفحات محتوى: {path}")
+    # بعد T8 تحتوي الخريطة صفحات التصنيفات حتى لو لم يوجد أي مقال منشور.
+    # لذلك لا نستنتج وجوب عناصر RSS من عدد روابط الخريطة، بل من روابط
+    # المقالات نفسها (كل ما ليس الرئيسية/تصنيفًا/صفحة ترقيم).
+    expected_items = {
+        url for url in sitemap_urls
+        if url != home
+        and "/categories/" not in url
+        and not url.removeprefix(home).startswith("page/")
+    }
+    actual_items: set[str] = set()
     for item in items:
         link = child_text(item, "link")
+        check.require(link not in actual_items, f"عنصر RSS مكرر: {link}")
+        if link:
+            actual_items.add(link)
         check.require(child_text(item, "title") != "", f"عنصر RSS بلا عنوان: {path}")
         check.require(link in sitemap_urls, f"عنصر RSS غير موجود في الخريطة: {link}")
         check.require(child_text(item, "guid") == link, f"guid لا يطابق الرابط: {link}")
         check.require(child_text(item, "description") != "", f"عنصر RSS بلا وصف: {link}")
+    check.require(actual_items == expected_items,
+                  f"عناصر RSS لا تطابق المقالات المنشورة: {path}")
     return len(items)
 
 
