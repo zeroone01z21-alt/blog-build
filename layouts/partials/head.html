@@ -3,8 +3,16 @@
   كل عنصر هنا إلزامي، والبناء يفشل عند غياب أيٍّ منه (tools/check_seo.py).
 */ -}}
 {{- $isPost := eq .Kind "page" -}}
+{{- /*
+  صورة المشاركة من موارد حزمة الصفحة.
+  ⚠️ لا تبنِ الرابط بـ (printf "%s%s" .Permalink $name): Hugo يضع موارد
+  الحزمة في مجلد اللغة الافتراضية وحده، فيعطي ذلك مسارًا غير موجود على
+  النسخة العربية (404 صامت في معاينة الرابط). اسأل المورد عن رابطه.
+*/ -}}
 {{- $img := cond (eq .Lang "ar") .Site.Params.defaultImageAr .Site.Params.defaultImage -}}
-{{- with .Params.featured_image }}{{ $img = (printf "%s%s" $.Permalink .) }}{{ end -}}
+{{- with .Params.featured_image -}}
+  {{- with $.Resources.GetMatch . }}{{ $img = .Permalink }}{{ end -}}
+{{- end -}}
 {{- $desc := .Description | default .Site.Params.description | default .Summary -}}
 
 <meta charset="utf-8">
@@ -46,10 +54,13 @@
 <meta name="twitter:image" content="{{ $img }}">
 
 {{/* الخطوط مستضافة ذاتيًّا — تحميل مسبق للوزن الأساسي فقط (بند 13) */}}
+{{/* relURL يبني المسار من baseURL — لا تكتبه يدويًّا:
+     مسار مثل "/blog/css/..." يكسر أي معاينة أو نطاق فرعي لا يطابق
+     الإنتاج حرفيًّا، وينكشف كصفحة بلا تنسيق بعد النشر. */}}
 <link rel="preload" as="font" type="font/woff2" crossorigin
-      href="/blog/fonts/{{ if eq .Lang "ar" }}cairo-arabic-400{{ else }}nm-400{{ end }}.woff2">
-<link rel="stylesheet" href="/blog/fonts/fonts.css">
-<link rel="stylesheet" href="/blog/css/blog.css">
+      href="{{ (printf "fonts/%s.woff2" (cond (eq .Lang "ar") "cairo-arabic-400" "nm-400")) | relURL }}">
+<link rel="stylesheet" href="{{ "fonts/fonts.css" | relURL }}">
+<link rel="stylesheet" href="{{ "css/blog.css" | relURL }}">
 
 {{/* بيانات منظّمة: Article + BreadcrumbList، مربوطة بكيان المنظمة على الموقع */}}
 {{- if $isPost }}

@@ -1,0 +1,53 @@
+[blog]
+other = "Blog"
+
+[home]
+other = "Home"
+
+[about]
+other = "About Us"
+
+[services]
+other = "Our Services"
+
+[work]
+other = "Our Work"
+
+[contact]
+other = "Contact Us"
+
+[otherLang]
+other = "العربية"
+
+[readingTime]
+other = "min read"
+
+[published]
+other = "Published"
+
+[updated]
+other = "Updated"
+
+[allPosts]
+other = "All articles"
+
+[category]
+other = "Category"
+
+[noPosts]
+other = "No articles yet."
+
+[backToBlog]
+other = "Back to the blog"
+
+[notFound]
+other = "Page not found"
+
+[notFoundMsg]
+other = "This page does not exist, or its address has changed."
+
+[rights]
+other = "All rights reserved."
+
+[socials]
+other = "Socials"

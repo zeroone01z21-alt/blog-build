@@ -1,15 +1,126 @@
-:root{--ink:#1C1D20;--cream:#FFFDED;--orange:#F9460E}
-*{box-sizing:border-box}
-body{margin:0;background:var(--cream);color:var(--ink);
-  font-family:'Dennis Sans',system-ui,sans-serif;line-height:1.6}
-html[dir=rtl] body{font-family:'Cairo',system-ui,sans-serif}
-.blog-head,.blog-foot{padding:1.5rem 6vw;display:flex;gap:2rem;align-items:center;justify-content:space-between}
-.brand{font-weight:700;letter-spacing:.02em;text-decoration:none;color:var(--ink)}
-.brand span{color:var(--orange)}
-main{max-width:44rem;margin-inline:auto;padding:2rem 6vw 4rem}
-.eyebrow{color:var(--orange);font-weight:700;margin:0 0 .5rem;font-size:.9rem}
-h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.15;margin:0 0 .75rem}
-.meta{opacity:.7;font-size:.9rem;margin:0 0 2rem}
-img{max-width:100%;height:auto;border-radius:.5rem}
-.body{font-size:1.075rem}
-a{color:var(--orange)}
+/* مدونة ZERO 2 ONE
+   ------------------------------------------------------------------
+   ملف واحد للاتجاهين. كل تباعد أفقي بخصائص منطقية
+   (margin-inline / padding-inline) فينعكس تلقائيًّا في RTL بلا نسخة ثانية.
+
+   بلا GSAP وبلا locomotive-scroll: حزمة جافاسكربت الموقع 168 كيلوبايت
+   وحدها، وميزانية المسار الحرج للمدونة 220 كيلوبايت **كاملة**. الهوية
+   البصرية تُنقل بالألوان والخطوط والتباعد، لا بمحرّك حركة.
+
+   الألوان مأخوذة من الموقع كما هي. */
+
+:root {
+  --ink: #1C1D20;
+  --cream: #FFFDED;
+  --orange: #F9460E;
+  --muted: color-mix(in srgb, var(--ink) 62%, var(--cream));
+  --line: color-mix(in srgb, var(--ink) 14%, var(--cream));
+  --measure: 38rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Dennis Sans', system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+}
+html[dir="rtl"] body { font-family: 'Cairo', system-ui, sans-serif; }
+
+a { color: inherit; }
+img { max-width: 100%; height: auto; }
+
+/* ── الهيدر ─────────────────────────────────────────────── */
+.bhead {
+  display: flex; align-items: center; gap: 1.25rem 2rem; flex-wrap: wrap;
+  padding: 1.25rem clamp(1rem, 6vw, 4rem);
+  border-block-end: 1px solid var(--line);
+}
+.bhead-brand {
+  font-weight: 700; letter-spacing: .01em; text-decoration: none;
+  font-size: 1.05rem; white-space: nowrap;
+}
+.bhead-brand span { color: var(--orange); }
+.bhead-nav { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-inline-start: auto; }
+.bhead-nav a { text-decoration: none; font-size: .95rem; }
+.bhead-nav a:hover, .bhead-lang:hover { color: var(--orange); }
+.bhead-nav a[aria-current="page"] { color: var(--orange); font-weight: 700; }
+.bhead-nav .cta { padding: .35rem .9rem; border: 1px solid var(--ink); border-radius: 999px; }
+.bhead-nav .cta:hover { background: var(--ink); color: var(--cream); }
+.bhead-lang { text-decoration: none; font-size: .9rem; opacity: .75; }
+
+/* ── التخطيط ────────────────────────────────────────────── */
+main { padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 6vw, 4rem) 4rem; }
+.post, .blog-index, .notfound { max-width: var(--measure); margin-inline: auto; }
+
+h1 { font-size: clamp(1.85rem, 4.5vw, 2.9rem); line-height: 1.15; margin: 0 0 .6rem; letter-spacing: -.01em; }
+h2 { font-size: clamp(1.3rem, 3vw, 1.65rem); line-height: 1.25; margin: 2.25rem 0 .6rem; }
+h3 { font-size: 1.15rem; margin: 1.75rem 0 .5rem; }
+
+/* ── المقال ─────────────────────────────────────────────── */
+.post-cats { color: var(--orange); font-weight: 700; font-size: .85rem; letter-spacing: .04em; margin: 0 0 .5rem; }
+.post-meta { color: var(--muted); font-size: .9rem; margin: 0 0 2rem; }
+.post-cover { width: 100%; border-radius: .6rem; margin-block-end: 2rem; }
+.post-body > :first-child { margin-block-start: 0; }
+.post-body p { margin: 0 0 1.15rem; }
+.post-body ul, .post-body ol { padding-inline-start: 1.4rem; margin: 0 0 1.15rem; }
+.post-body li { margin-block-end: .4rem; }
+.post-body a { color: var(--orange); text-underline-offset: .18em; }
+.post-body blockquote {
+  margin: 1.5rem 0; padding-inline-start: 1.1rem;
+  border-inline-start: 3px solid var(--orange); color: var(--muted);
+}
+.post-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em;
+  background: var(--line); padding: .12em .35em; border-radius: .25rem;
+}
+.post-body pre { overflow-x: auto; padding: 1rem; border-radius: .5rem; background: var(--ink); color: var(--cream); }
+.post-body pre code { background: none; padding: 0; }
+.post-body img { border-radius: .5rem; margin: 1.5rem 0; }
+.post-body table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; display: block; overflow-x: auto; }
+.post-body th, .post-body td { border: 1px solid var(--line); padding: .5rem .7rem; text-align: start; }
+.post-back { margin-block-start: 3rem; padding-block-start: 1.5rem; border-block-start: 1px solid var(--line); }
+.post-back a { color: var(--orange); text-decoration: none; }
+
+/* ── قائمة المقالات ─────────────────────────────────────── */
+.blog-intro { color: var(--muted); margin-block-end: 2.5rem; }
+.cards { list-style: none; padding: 0; margin: 0; display: grid; gap: 2rem; }
+.card { padding-block-end: 2rem; border-block-end: 1px solid var(--line); }
+.card:last-child { border-block-end: 0; }
+.card-cat { color: var(--orange); font-weight: 700; font-size: .8rem; margin: 0 0 .35rem; }
+.card h2 { margin: 0 0 .4rem; font-size: 1.4rem; }
+.card h2 a { text-decoration: none; }
+.card h2 a:hover { color: var(--orange); }
+.card-desc { margin: 0 0 .5rem; color: var(--muted); }
+.card-meta { margin: 0; font-size: .85rem; color: var(--muted); }
+.empty { color: var(--muted); }
+
+/* ── 404 ────────────────────────────────────────────────── */
+.notfound { text-align: center; padding-block: 3rem; }
+.notfound .code { font-size: clamp(4rem, 18vw, 9rem); line-height: 1; margin: 0; color: var(--orange); font-weight: 700; }
+
+/* ── الفوتر ─────────────────────────────────────────────── */
+.bfoot { padding: clamp(2.5rem, 6vw, 4rem) clamp(1rem, 6vw, 4rem) 2rem; border-block-start: 1px solid var(--line); }
+.bfoot-grid { display: grid; gap: 2.5rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.bfoot-lead { font-size: 1.35rem; line-height: 1.3; margin: 0 0 1rem; max-width: 18ch; }
+.bfoot-cta {
+  display: inline-block; padding: .6rem 1.4rem; border-radius: 999px;
+  background: var(--orange); color: var(--cream); text-decoration: none; font-weight: 700;
+}
+.bfoot-cta:hover { background: var(--ink); }
+.bfoot address { font-style: normal; color: var(--muted); line-height: 1.9; }
+.bfoot-h { font-weight: 700; margin: 0 0 .5rem; }
+.bfoot-social { list-style: none; padding: 0; margin: 0; display: grid; gap: .3rem; }
+.bfoot-social a { color: var(--muted); text-decoration: none; }
+.bfoot-social a:hover { color: var(--orange); }
+.bfoot-legal { margin: 2.5rem 0 0; font-size: .85rem; color: var(--muted); }
+
+/* ── الوصول ─────────────────────────────────────────────── */
+:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

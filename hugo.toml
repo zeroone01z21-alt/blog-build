@@ -19,15 +19,15 @@ defaultContentLanguageInSubdir = false
 
 [languages]
   [languages.en]
-    languageCode = 'en'
-    languageName = 'English'
-    languageDirection = 'ltr'
+    locale = 'en'
+    label = 'English'
+    direction = 'ltr'
     weight = 1
     title = 'ZERO 2 ONE Blog'
   [languages.ar]
-    languageCode = 'ar'
-    languageName = 'العربية'
-    languageDirection = 'rtl'
+    locale = 'ar'
+    label = 'العربية'
+    direction = 'rtl'
     weight = 2
     title = 'مدونة ZERO 2 ONE'
 

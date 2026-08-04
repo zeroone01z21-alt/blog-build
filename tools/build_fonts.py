@@ -149,7 +149,7 @@ def write_css(cairo, neue):
             "  font-style: normal;",
             f"  font-weight: {weight};",
             "  font-display: swap;",
-            f"  src: url('/blog/fonts/{name}') format('woff2');",
+            f"  src: url('{name}') format('woff2');",
             f"  unicode-range: {rng};",
             "}",
             "",
@@ -162,7 +162,7 @@ def write_css(cairo, neue):
             "  font-style: normal;",
             f"  font-weight: {weight};",
             "  font-display: swap;",
-            f"  src: url('/blog/fonts/{name}') format('woff2');",
+            f"  src: url('{name}') format('woff2');",
             "}",
             "",
         ]

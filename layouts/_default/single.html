@@ -1,14 +1,30 @@
 {{ define "main" }}
 <article class="post">
-  <p class="eyebrow">{{ range $i, $c := .Params.categories }}{{ if $i }} · {{ end }}{{ $c }}{{ end }}</p>
-  <h1>{{ .Title }}</h1>
-  <p class="meta">
-    <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
-    · {{ .ReadingTime }} {{ if eq .Lang "ar" }}دقيقة قراءة{{ else }}min read{{ end }}
-  </p>
-  {{ with .Params.featured_image }}
-  <img src="{{ . }}" alt="{{ $.Params.featured_image_alt }}" width="1200" height="630" loading="eager">
-  {{ end }}
-  <div class="body">{{ .Content }}</div>
+  <header class="post-head">
+    {{- with .Params.categories }}
+    <p class="post-cats">
+      {{- range $i, $c := . }}{{ if $i }} <span aria-hidden="true">·</span> {{ end }}{{ $c }}{{ end -}}
+    </p>
+    {{- end }}
+    <h1>{{ .Title }}</h1>
+    <p class="post-meta">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+      <span aria-hidden="true">·</span>
+      {{ .ReadingTime }} {{ T "readingTime" }}
+      {{- if gt (.Lastmod.Sub .Date).Hours 24 }}
+      <span aria-hidden="true">·</span>
+      {{ T "updated" }} <time datetime="{{ .Lastmod.Format "2006-01-02" }}">{{ .Lastmod.Format "2006-01-02" }}</time>
+      {{- end }}
+    </p>
+  </header>
+
+  {{- with .Params.featured_image }}{{ with $.Resources.GetMatch . }}
+  <img class="post-cover" src="{{ .RelPermalink }}" alt="{{ $.Params.featured_image_alt }}"
+       width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
+  {{ end }}{{ end }}
+
+  <div class="post-body">{{ .Content }}</div>
+
+  <p class="post-back"><a href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">&larr; {{ T "backToBlog" }}</a></p>
 </article>
 {{ end }}

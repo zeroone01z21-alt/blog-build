@@ -1,0 +1,53 @@
+[blog]
+other = "المدونة"
+
+[home]
+other = "الرئيسية"
+
+[about]
+other = "من نحن"
+
+[services]
+other = "خدماتنا"
+
+[work]
+other = "أعمالنا"
+
+[contact]
+other = "تواصل معنا"
+
+[otherLang]
+other = "English"
+
+[readingTime]
+other = "دقيقة قراءة"
+
+[published]
+other = "نُشر"
+
+[updated]
+other = "حُدِّث"
+
+[allPosts]
+other = "كل المقالات"
+
+[category]
+other = "التصنيف"
+
+[noPosts]
+other = "لا مقالات بعد."
+
+[backToBlog]
+other = "العودة إلى المدونة"
+
+[notFound]
+other = "الصفحة غير موجودة"
+
+[notFoundMsg]
+other = "هذه الصفحة غير موجودة، أو تغيّر عنوانها."
+
+[rights]
+other = "جميع الحقوق محفوظة."
+
+[socials]
+other = "تواصل"

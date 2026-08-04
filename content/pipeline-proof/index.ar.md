@@ -6,6 +6,7 @@ date: 2026-08-03T10:00:00+03:00
 lastmod: 2026-08-03T10:00:00+03:00
 draft: false
 categories: ["تحسين محركات البحث (SEO)"]
+featured_image: "cover-ar.jpg"
 featured_image_alt: "ZERO 2 ONE"
 ---
 

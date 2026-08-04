@@ -6,6 +6,7 @@ date: 2026-08-03T10:00:00+03:00
 lastmod: 2026-08-03T10:00:00+03:00
 draft: false
 categories: ["Search Engine Optimization (SEO)"]
+featured_image: "cover.jpg"
 featured_image_alt: "ZERO 2 ONE"
 ---
 

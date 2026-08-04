@@ -1,0 +1,18 @@
+{{- $ar := eq .Lang "ar" -}}
+{{- $site := cond $ar "/ar" "" -}}
+{{- $blog := cond $ar "/blog/ar/" "/blog/" -}}
+<header class="bhead">
+  <a class="bhead-brand" href="{{ $site }}/">ZERO <span>2</span> ONE</a>
+  <nav class="bhead-nav" aria-label="{{ T "blog" }}">
+    <a href="{{ $site }}/">{{ T "home" }}</a>
+    <a href="{{ $site }}/services/">{{ T "services" }}</a>
+    <a href="{{ $site }}/work/">{{ T "work" }}</a>
+    <a href="{{ $blog }}" aria-current="page">{{ T "blog" }}</a>
+    <a class="cta" href="{{ $site }}/contact/">{{ T "contact" }}</a>
+  </nav>
+  {{- with .Translations }}
+  <a class="bhead-lang" href="{{ (index . 0).Permalink }}" hreflang="{{ (index . 0).Lang }}">{{ T "otherLang" }}</a>
+  {{- else }}
+  <a class="bhead-lang" href="{{ cond $ar "/blog/" "/blog/ar/" }}">{{ T "otherLang" }}</a>
+  {{- end }}
+</header>

@@ -1,11 +1,25 @@
 {{ define "main" }}
-<h1>{{ .Title }}</h1>
-<ul class="post-list">
-  {{ range .Pages }}
-  <li>
-    <a href="{{ .RelPermalink }}">{{ .Title }}</a>
-    <p>{{ .Description }}</p>
-  </li>
-  {{ end }}
-</ul>
+<div class="blog-index">
+  <h1>{{ .Title }}</h1>
+  {{- with .Content }}<div class="blog-intro">{{ . }}</div>{{ end }}
+  {{- $posts := where .Site.RegularPages "Type" "page" }}
+  {{- if $posts }}
+  <ul class="cards">
+    {{- range $posts.ByDate.Reverse }}
+    <li class="card">
+      {{- with .Params.featured_image }}{{ with $.Resources.GetMatch . }}{{ end }}{{ end }}
+      {{- with .Params.categories }}<p class="card-cat">{{ index . 0 }}</p>{{ end }}
+      <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+      <p class="card-desc">{{ .Description }}</p>
+      <p class="card-meta">
+        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+        <span aria-hidden="true">·</span> {{ .ReadingTime }} {{ T "readingTime" }}
+      </p>
+    </li>
+    {{- end }}
+  </ul>
+  {{- else }}
+  <p class="empty">{{ T "noPosts" }}</p>
+  {{- end }}
+</div>
 {{ end }}
