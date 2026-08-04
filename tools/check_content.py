@@ -97,6 +97,22 @@ def check_file(path, schema, problems):
         bad("الملف لا يبدأ بكتلة إعدادات بين سطري ---. أعد حفظه من اللوحة.")
         return
 
+    # `_index` صفحة قسم لا مقال — هي عنوان المدونة ووصفها، بلا تصنيف
+    # ولا صورة مشاركة ولا جسم. مطالبتها بحقول المقال خطأ في المدقّق لا
+    # في المحتوى، وكان سيمنع كل بناء.
+    if os.path.basename(path).startswith("_index."):
+        for name in ("title", "description"):
+            rule = schema["fields"].get(name, {})
+            val = fm.get(name)
+            if not val:
+                bad(f"صفحة القسم تحتاج «{name}».")
+                continue
+            n = visible_length(val)
+            lo, hi = rule.get("min_length"), rule.get("max_length")
+            if (lo and n < lo) or (hi and n > hi):
+                bad((rule.get("error_ar") or "").replace("{actual}", str(n)))
+        return
+
     fields = schema["fields"]
     allowed_cats = {c["en"] for c in schema["categories"]["items"]} | \
                    {c["ar"] for c in schema["categories"]["items"]}
@@ -149,7 +165,9 @@ def check_images(directory, schema, problems):
     for base, dirs, files in os.walk(directory):
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         for f in files:
-            if f.startswith("."):
+            # `_index.<lang>.md` أسماء محجوزة في Hugo، وقاعدة التسمية
+            # موجّهة لما يرفعه الكاتب لا لما يولّده النظام
+            if f.startswith(".") or f.startswith("_index."):
                 continue
             ext = f.rsplit(".", 1)[-1].lower()
             full = os.path.join(base, f)
