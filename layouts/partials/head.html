@@ -1,8 +1,11 @@
 {{- /*
   طبقة SEO — القسم 8.2
-  كل عنصر هنا إلزامي، والبناء يفشل عند غياب أيٍّ منه (tools/check_seo.py).
+  tools/check_seo.py يفرض عناصر الصفحة وعلاقات hreflang وJSON-LD قبل النشر،
+  بينما check_indexing.py يغطي الخرائط وRSS وIndexNow.
 */ -}}
 {{- $isPost := eq .Kind "page" -}}
+{{- $is404 := eq .Kind "404" -}}
+{{- $isPreview := eq hugo.Environment "preview" -}}
 {{- /*
   صورة المشاركة من موارد حزمة الصفحة.
   ⚠️ لا تبنِ الرابط بـ (printf "%s%s" .Permalink $name): Hugo يضع موارد
@@ -13,13 +16,27 @@
 {{- with .Params.featured_image -}}
   {{- with $.Resources.GetMatch . }}{{ $img = .Permalink }}{{ end -}}
 {{- end -}}
-{{- $desc := .Description | default .Site.Params.description | default .Summary -}}
+{{- $desc := cond $is404 (T "notFoundDescription") (.Description | default .Site.Params.description | default .Summary) -}}
+{{- $pageTitle := cond $is404 (T "notFound") (cond .IsHome .Site.Title .Title) -}}
+{{- $documentTitle := $pageTitle -}}
+{{- if not .IsHome -}}
+  {{- $brandedTitle := printf "%s — %s" $pageTitle .Site.Title -}}
+  {{- /* لا نفشل عنوانًا يسمح به عقد المحتوى لمجرد إضافة اسم المدونة. */ -}}
+  {{- if le (strings.RuneCount $brandedTitle) 70 }}
+    {{- $documentTitle = $brandedTitle -}}
+  {{- end -}}
+{{- end -}}
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} — {{ .Site.Title }}{{ end }}</title>
+<title>{{ $documentTitle }}</title>
 <meta name="description" content="{{ $desc | plainify | truncate 160 "" }}">
+{{- if $isPreview }}
+<meta name="robots" content="noindex, nofollow, noarchive">
+{{- else if $is404 }}
+<meta name="robots" content="noindex, follow">
+{{- end }}
 <link rel="canonical" href="{{ .Permalink }}">
 
 {{/* hreflang متبادل + x-default → الإنجليزية (قرار بند صفر) */}}
@@ -36,7 +53,7 @@
 <meta property="og:type" content="{{ if $isPost }}article{{ else }}website{{ end }}">
 <meta property="og:site_name" content="{{ .Site.Params.organization }}">
 <meta property="og:locale" content="{{ if eq .Lang "ar" }}ar_SA{{ else }}en_US{{ end }}">
-<meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}">
+<meta property="og:title" content="{{ $pageTitle }}">
 <meta property="og:description" content="{{ $desc | plainify | truncate 160 "" }}">
 <meta property="og:url" content="{{ .Permalink }}">
 <meta property="og:image" content="{{ $img }}">
@@ -49,9 +66,14 @@
 {{- end }}
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}">
+<meta name="twitter:title" content="{{ $pageTitle }}">
 <meta name="twitter:description" content="{{ $desc | plainify | truncate 160 "" }}">
 <meta name="twitter:image" content="{{ $img }}">
+
+{{/* اكتشاف RSS — رابط feed اللغة الحالية من كل صفحة */}}
+{{- with .Site.Home.OutputFormats.Get "RSS" }}
+<link rel="alternate" type="{{ .MediaType.Type }}" href="{{ .Permalink }}" title="{{ T "feedTitle" }}">
+{{- end }}
 
 {{/* الخطوط مستضافة ذاتيًّا — تحميل مسبق للوزن الأساسي فقط (بند 13) */}}
 {{/* relURL يبني المسار من baseURL — لا تكتبه يدويًّا:
@@ -87,6 +109,39 @@
     (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" "https://zero2one.sa/")
     (dict "@type" "ListItem" "position" 2 "name" .Site.Title "item" (printf "%s" .Site.BaseURL))
     (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink))
+  | jsonify (dict "indent" "  ") | safeJS }}
+</script>
+{{- else if not $is404 }}
+{{- /*
+  الصفحة الرئيسية وأرشيفات التصنيف ليست Article. وصفها بـCollectionPage
+  يمنح محركات البحث نوعًا صحيحًا بدل وضع schema مقال وهمي على قائمة.
+*/ -}}
+<script type="application/ld+json">
+{{ dict
+  "@context" "https://schema.org"
+  "@type" "CollectionPage"
+  "@id" .Permalink
+  "url" .Permalink
+  "name" .Title
+  "description" ($desc | plainify | truncate 160 "")
+  "inLanguage" .Lang
+  "isPartOf" (dict "@type" "Blog" "@id" .Site.Home.Permalink "url" .Site.Home.Permalink)
+  "publisher" (dict "@id" .Site.Params.organizationId)
+  | jsonify (dict "indent" "  ") | safeJS }}
+</script>
+{{- $collectionBreadcrumbs := slice
+  (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" "https://zero2one.sa/")
+  (dict "@type" "ListItem" "position" 2 "name" .Site.Title "item" .Site.Home.Permalink)
+-}}
+{{- if not .IsHome }}
+  {{- $collectionBreadcrumbs = $collectionBreadcrumbs | append
+    (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink) -}}
+{{- end }}
+<script type="application/ld+json">
+{{ dict
+  "@context" "https://schema.org"
+  "@type" "BreadcrumbList"
+  "itemListElement" $collectionBreadcrumbs
   | jsonify (dict "indent" "  ") | safeJS }}
 </script>
 {{- end }}

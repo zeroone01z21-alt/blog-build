@@ -1,0 +1,29 @@
+# ZERO 2 ONE blog — server responses only.
+# This file is published as /blog/.htaccess. Do not add Header directives:
+# Hostinger/LiteSpeed support varies, and one unsupported directive can turn
+# every blog request into HTTP 500.
+
+# The English site is already canonical at /blog/. Hugo intentionally does
+# not generate a client-side /blog/en/ alias, so the server carries the old
+# address with one exact permanent redirect.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^en/?$ /blog/ [R=301,L,NE]
+
+    # A permanently removed article returns 410 with Apache's [G] flag.
+    # Add a rule only after the exact retired production URL is documented and
+    # approved. Patterns here are English paths relative to /blog/, anchored
+    # at both ends, and must never contain request-derived substitutions.
+    # Arabic retired paths belong to the matching block in static/ar/.htaccess
+    # so their 410 response receives the Arabic error document.
+    #
+    # BEGIN verified 410 rules
+    # No URL has been verified as permanently removed yet.
+    # END verified 410 rules
+</IfModule>
+
+# Local paths preserve the original 404/410 status; external URLs would turn
+# the error response into a redirect. English is the safe fallback. Requests
+# below /blog/ar/ inherit the Arabic override from static/ar/.htaccess.
+ErrorDocument 404 /blog/404.html
+ErrorDocument 410 /blog/404.html

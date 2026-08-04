@@ -1,0 +1,17 @@
+{{- /* النظير العربي؛ المصدر الوحيد للأسماء هو controls/schema.json. */ -}}
+{{- $schema := transform.Unmarshal (os.ReadFile "controls/schema.json") -}}
+{{- range $schema.categories.items -}}
+  {{- $params := dict
+    "category_slug" .slug
+    "intro" .intro_ar
+  -}}
+  {{- $page := dict
+    "description" .description_ar
+    "kind" "term"
+    "params" $params
+    "path" .slug
+    "title" .ar
+    "translationKey" (printf "category-%s" .slug)
+  -}}
+  {{- $.AddPage $page -}}
+{{- end -}}

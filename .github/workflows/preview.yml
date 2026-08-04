@@ -1,0 +1,247 @@
+# معاينة محمية يدويًا — لا تنشر إلى الإنتاج ولا إلى مستودع الموقع.
+#
+# حساب FTP الخاص بالمعاينة محصور من لوحة الاستضافة في public_html/preview/.
+# mirror يحذف الملفات القديمة، لكنه يستثني ملفات حماية الخادم صراحةً كي لا
+# يستبدل .htaccess أو .htpasswd أو يحذفهما.
+name: preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview
+  cancel-in-progress: true
+
+env:
+  HUGO_VERSION: "0.164.0"
+  HUGO_SHA256: "fea17b8c076f950bb2e9f9486667bdaa29422883888d509d63931c73e8a9b3a4"
+  PREVIEW_BASE_URL: "https://preview.zero2one.sa/blog/"
+
+jobs:
+  preview:
+    name: بناء ورفع المعاينة
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: قوالب المدونة
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: المحتوى
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: zeroone01z21-alt/blog-content
+          path: .content-src
+
+      - name: التحقق من بصمات الضوابط
+        run: python3 tools/check_controls.py
+
+      - name: تدقيق المحتوى
+        run: python3 tools/check_content.py .content-src/content
+
+      - name: إيقاف النشر إن لم يكتمل OAuth
+        run: |
+          set -euo pipefail
+          python3 tools/generate_cms.py --check
+          python3 tools/check_cms.py
+          python3 - <<'PY'
+          import importlib.util
+          import sys
+          from urllib.parse import urlsplit
+
+          spec = importlib.util.spec_from_file_location("generate_cms", "tools/generate_cms.py")
+          if spec is None or spec.loader is None:
+              print("::error::تعذر تحميل مولّد إعداد لوحة الكاتب")
+              raise SystemExit(1)
+          generator = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(generator)
+          schema = generator.load_json(generator.SCHEMA_PATH)
+          settings = generator.load_json(generator.SETTINGS_PATH)
+          backend = generator.build_config(schema, settings)["backend"]
+          base_url = str(backend.get("base_url", ""))
+          parsed = urlsplit(base_url)
+          if base_url == generator.OAUTH_PLACEHOLDER:
+              print("::error::OAuth ما يزال placeholder؛ لن تُنشر لوحة غير قابلة للدخول")
+              raise SystemExit(1)
+          if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+              print("::error::oauth_base_url يجب أن يكون عنوان HTTPS صالحًا بلا بيانات دخول")
+              raise SystemExit(1)
+          if parsed.query or parsed.fragment:
+              print("::error::oauth_base_url لا يقبل query أو fragment")
+              raise SystemExit(1)
+          print("OAuth مضبوط؛ يمكن متابعة بناء المعاينة")
+          PY
+
+      - name: تثبيت Hugo ببصمة الإصدار
+        run: |
+          set -euo pipefail
+          archive="hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
+          curl -sSLo "$archive" "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/$archive"
+          echo "${HUGO_SHA256}  $archive" | sha256sum -c -
+          tar -xzf "$archive" hugo
+          sudo mv hugo /usr/local/bin/
+          hugo version
+
+      - name: تجهيز المحتوى دون المؤرشف
+        run: python3 tools/prepare_content.py .content-src/content
+
+      - name: بناء المعاينة مع المسودات
+        run: |
+          set -euo pipefail
+          hugo --gc --minify --buildDrafts \
+            --environment preview \
+            --baseURL "$PREVIEW_BASE_URL" \
+            --destination preview-public
+          test -s preview-public/index.html
+
+      - name: فحص noindex وروابط المعاينة
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          expected_base = "https://preview.zero2one.sa/blog/"
+
+          class Metadata(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.noindex = False
+                  self.canonicals = []
+
+              def handle_starttag(self, tag, attrs):
+                  values = {key.lower(): (value or "") for key, value in attrs}
+                  if tag.lower() == "meta" and values.get("name", "").lower() == "robots":
+                      directives = {part.strip().lower() for part in values.get("content", "").split(",")}
+                      self.noindex = "noindex" in directives
+                  if tag.lower() == "link" and "canonical" in values.get("rel", "").lower().split():
+                      self.canonicals.append(values.get("href", ""))
+
+          pages = sorted(Path("preview-public").rglob("*.html"))
+          problems = []
+          if not pages:
+              problems.append("لا توجد صفحات HTML في بناء المعاينة")
+          for page in pages:
+              metadata = Metadata()
+              metadata.feed(page.read_text(encoding="utf-8"))
+              if not metadata.noindex:
+                  problems.append(f"noindex مفقود: {page}")
+              for canonical in metadata.canonicals:
+                  if not canonical.startswith(expected_base):
+                      problems.append(f"canonical خارج نطاق المعاينة: {page}")
+          if problems:
+              for problem in problems:
+                  print(f"::error::{problem}")
+              raise SystemExit(1)
+          print(f"فُحصت {len(pages)} صفحة: كلها noindex وروابطها على نطاق المعاينة")
+          PY
+          python3 tools/check_budgets.py preview-public
+
+      - name: تجهيز جذر المعاينة والمدونة واللوحة
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/preview-stage"
+          mkdir -p "$stage/blog" "$stage/admin/vendor"
+
+          # ملفات حماية الخادم ليست جزءًا من الحمولة أصلًا، ثم يستثنيها lftp
+          # مرة ثانية عند الحذف على الخادم (دفاع بطبقتين).
+          rsync -a \
+            --exclude='.htaccess' \
+            --exclude='.htpasswd' \
+            preview-public/ "$stage/blog/"
+          install -m 0644 preview/index.html "$stage/index.html"
+          install -m 0644 preview/admin/index.html "$stage/admin/index.html"
+          install -m 0644 preview/admin/config.yml "$stage/admin/config.yml"
+          install -m 0644 preview/admin/vendor/sveltia-cms.js "$stage/admin/vendor/sveltia-cms.js"
+          install -m 0644 preview/admin/vendor/SVELTIA-CMS-LICENSE.txt \
+            "$stage/admin/vendor/SVELTIA-CMS-LICENSE.txt"
+
+          if find "$stage" -type f \( -name '.htaccess' -o -name '.htpasswd' \) -print -quit | grep -q .; then
+            echo "::error::حمولة المعاينة تحتوي ملف حماية خادم"
+            exit 1
+          fi
+          if grep -Fq 'OWNER_MUST_SET_OAUTH_BASE_URL' "$stage/admin/config.yml"; then
+            echo "::error::OAuth placeholder موجود في حمولة النشر"
+            exit 1
+          fi
+          test -s "$stage/index.html"
+          test -s "$stage/blog/index.html"
+          test -s "$stage/admin/index.html"
+
+      - name: تثبيت lftp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends lftp
+
+      - name: الرفع إلى نطاق المعاينة وتنظيف Header القديم
+        env:
+          PREVIEW_FTP_HOST: ${{ secrets.PREVIEW_FTP_HOST }}
+          PREVIEW_FTP_USER: ${{ secrets.PREVIEW_FTP_USER }}
+          PREVIEW_FTP_PASSWORD: ${{ secrets.PREVIEW_FTP_PASSWORD }}
+          PREVIEW_FTP_DIR: ${{ secrets.PREVIEW_FTP_DIR }}
+        run: |
+          set -euo pipefail
+          for variable in PREVIEW_FTP_HOST PREVIEW_FTP_USER PREVIEW_FTP_PASSWORD PREVIEW_FTP_DIR; do
+            if [ -z "${!variable:-}" ]; then
+              echo "::error::السر ${variable} غير مضبوط"
+              exit 1
+            fi
+          done
+          if [[ ! "$PREVIEW_FTP_HOST" =~ ^[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]]; then
+            echo "::error::PREVIEW_FTP_HOST يجب أن يكون اسم مضيف فقط، من دون scheme أو مسار"
+            exit 1
+          fi
+          if [[ ! "$PREVIEW_FTP_DIR" =~ ^[A-Za-z0-9._/-]+$ ]] \
+             || [[ "$PREVIEW_FTP_DIR" == *".."* ]] \
+             || [[ "$PREVIEW_FTP_DIR" == *"//"* ]]; then
+            echo "::error::PREVIEW_FTP_DIR غير آمن"
+            exit 1
+          fi
+          if [[ ! "$PREVIEW_FTP_USER" =~ ^[A-Za-z0-9._@-]+$ ]]; then
+            echo "::error::PREVIEW_FTP_USER غير صالح"
+            exit 1
+          fi
+
+          # lftp يضيف اسم مجلد المصدر إذا انتهت الوجهة بشرطة مائلة؛ نزيلها
+          # كي يبقى النشر داخل PREVIEW_FTP_DIR نفسه لا داخل preview-stage/.
+          remote_dir="${PREVIEW_FTP_DIR%/}"
+          if [ -z "$remote_dir" ]; then
+            remote_dir="/"
+          fi
+          remote_htaccess="${remote_dir%/}/.htaccess"
+          if [ "$remote_dir" = "/" ]; then
+            remote_htaccess="/.htaccess"
+          fi
+          stage="$RUNNER_TEMP/preview-stage"
+          protection="$RUNNER_TEMP/preview-protection.htaccess"
+
+          # لا نخترع AuthUserFile الخاص بالاستضافة. نسحب ملف الحماية العامل،
+          # نثبت بقاء Basic Auth، ونزيل Header فقط قبل إعادته بعد نجاح mirror.
+          lftp -u "$PREVIEW_FTP_USER","$PREVIEW_FTP_PASSWORD" -e "
+              set cmd:fail-exit yes;
+              set net:max-retries 2;
+              set net:timeout 20;
+              set ftp:ssl-force yes;
+              set ftp:ssl-protect-data yes;
+              set ssl:verify-certificate yes;
+              get \"${remote_htaccess}\" -o \"${protection}\";
+              bye
+            " "ftp://${PREVIEW_FTP_HOST}"
+          python3 tools/sanitize_preview_htaccess.py "$protection"
+
+          lftp -u "$PREVIEW_FTP_USER","$PREVIEW_FTP_PASSWORD" -e "
+              set cmd:fail-exit yes;
+              set net:max-retries 2;
+              set net:timeout 20;
+              set net:reconnect-interval-base 5;
+              set ftp:ssl-force yes;
+              set ftp:ssl-protect-data yes;
+              set ssl:verify-certificate yes;
+              mirror --reverse --delete --no-perms --parallel=2 --verbose=1 \
+                --exclude='(^|/)[.]ht(access|passwd)$' \
+                \"${stage}\" \"${remote_dir}\";
+              put \"${protection}\" -o \"${remote_htaccess}\";
+              bye
+            " "ftp://${PREVIEW_FTP_HOST}"

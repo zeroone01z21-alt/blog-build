@@ -1,7 +1,6 @@
 # إعداد Hugo — المدونة
 #
-# ⚠️ هذا إعداد **إثبات** (بند 1 من أسبوع الإثبات)، لا إعداد المرحلة 2.
-# غرضه صفحة واحدة بنسق كامل نتحقق منها قبل بناء القوالب الحقيقية.
+# إعداد الإنتاج للمدونة. إصدار Hugo نفسه مثبت مع بصمته في سير البناء.
 
 baseURL = 'https://zero2one.sa/blog/'
 title = 'مدونة ZERO 2 ONE'
@@ -10,12 +9,27 @@ enableGitInfo = false
 timeZone = 'Asia/Riyadh'
 summaryLength = 40
 
-# التصنيفات ستُبنى بقوالبها في المرحلة 2؛ الخريطة تُولَّد من أداتنا
-disableKinds = ['taxonomy', 'term']
-
 # قرار بند صفر: الإنجليزية بلا بادئة، العربية ببادئة — مطابقةً للموقع
 defaultContentLanguage = 'en'
 defaultContentLanguageInSubdir = false
+# لا ننشئ /en/index.html كتحويل HTML إلى الجذر. الإنجليزية أصلًا في
+# /blog/، والتحويل على جهة العميل يضيف صفحة ناقصة إلى فحوص SEO.
+disableDefaultSiteRedirect = true
+
+# تصنيف واحد مضبوط من العقد المركزي. قيم front matter هي slugs الثابتة
+# (مثل seo)، بينما يولّد محوّل المحتوى أدناه أسماء EN/AR من schema.json.
+[taxonomies]
+  category = 'categories'
+
+# سير البناء يستبدل content/ بمحتوى الكاتب. نبقي صفحات تعريف التصنيفات
+# في مصدر منفصل ونركّب المصدرين معًا كي لا تضيع عند كل بناء.
+[module]
+  [[module.mounts]]
+    source = 'content'
+    target = 'content'
+  [[module.mounts]]
+    source = 'taxonomy-content/categories'
+    target = 'content/categories'
 
 [languages]
   [languages.en]
@@ -56,4 +70,3 @@ defaultContentLanguageInSubdir = false
   logo = 'https://zero2one.sa/assets/icons/logo-z2o.svg'
   defaultImage = 'https://zero2one.sa/assets/images/og-cover.jpg'
   defaultImageAr = 'https://zero2one.sa/assets/images/og-cover-ar.jpg'
-  ga4 = 'G-Z7XN1NZY47'

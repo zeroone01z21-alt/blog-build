@@ -97,12 +97,60 @@
   "categories": {
     "$comment": "الخدمات الستة من hasOfferCatalog في سكيما zero2one.sa — الأسماء العربية منقولة حرفياً لضمان التطابق",
     "items": [
-      { "slug": "web-design",            "en": "Website Design & Development",              "ar": "تصميم وتطوير المواقع" },
-      { "slug": "seo",                   "en": "Search Engine Optimization (SEO)",          "ar": "تحسين محركات البحث (SEO)" },
-      { "slug": "advertising",           "en": "Advertising Campaign Management",           "ar": "إدارة الحملات الإعلانية" },
-      { "slug": "brand-identity",        "en": "Brand Identity Development",                "ar": "تطوير الهوية التجارية" },
-      { "slug": "social-media",          "en": "Social Media Management & Content Creation", "ar": "إدارة وسائل التواصل وصناعة المحتوى" },
-      { "slug": "ecommerce",             "en": "E-commerce & Custom Systems Development",   "ar": "تطوير المتاجر الإلكترونية والأنظمة المخصّصة" }
+      {
+        "slug": "web-design",
+        "en": "Website Design & Development",
+        "ar": "تصميم وتطوير المواقع",
+        "description_en": "Practical guidance on planning, designing, and building fast websites that turn visits into measurable business results.",
+        "description_ar": "إرشادات عملية لتخطيط وتصميم وبناء مواقع سريعة تحوّل الزيارات إلى نتائج أعمال قابلة للقياس.",
+        "intro_en": "A useful website begins with the customer journey, not a visual trend. These articles cover information architecture, accessible interfaces, mobile performance, content structure, and the technical decisions behind dependable launches. Use them to evaluate a new build, improve an existing site, and connect design choices to enquiries, sales, and long-term maintainability.",
+        "intro_ar": "يبدأ الموقع المفيد من رحلة العميل لا من صيحة بصرية عابرة. تتناول هذه المقالات هندسة المعلومات والواجهات الميسّرة وأداء الجوال وبنية المحتوى والقرارات التقنية وراء الإطلاق الموثوق. استخدمها لتقييم مشروع جديد أو تحسين موقع قائم وربط قرارات التصميم بالاستفسارات والمبيعات وسهولة الصيانة على المدى الطويل."
+      },
+      {
+        "slug": "seo",
+        "en": "Search Engine Optimization (SEO)",
+        "ar": "تحسين محركات البحث (SEO)",
+        "description_en": "Clear SEO guidance for earning relevant search visibility through sound content, technical foundations, and local intent.",
+        "description_ar": "إرشادات واضحة لكسب ظهور ملائم في البحث عبر محتوى متين وأساس تقني سليم وفهم نية البحث المحلية.",
+        "intro_en": "Search visibility grows when technical health, search intent, and useful answers work together. Here we examine keyword research, on-page structure, crawling and indexing, internal links, local SEO, and measurement. The focus is sustainable discovery by the right audience—not shortcuts that create a temporary ranking and a lasting maintenance problem.",
+        "intro_ar": "ينمو الظهور في البحث عندما تعمل السلامة التقنية ونية الباحث والإجابة المفيدة معًا. نفحص هنا بحث الكلمات وبنية الصفحة والزحف والفهرسة والروابط الداخلية والبحث المحلي والقياس. التركيز على اكتشاف مستدام من الجمهور المناسب، لا على اختصارات تمنح ترتيبًا مؤقتًا وتترك مشكلة صيانة دائمة."
+      },
+      {
+        "slug": "advertising",
+        "en": "Advertising Campaign Management",
+        "ar": "إدارة الحملات الإعلانية",
+        "description_en": "Methods for building, measuring, and improving paid campaigns around a clear offer, qualified audience, and real return.",
+        "description_ar": "أساليب لبناء الحملات المدفوعة وقياسها وتحسينها حول عرض واضح وجمهور مؤهل وعائد حقيقي.",
+        "intro_en": "Paid media is a controlled investment, not a substitute for strategy. This archive looks at offer design, audience selection, creative testing, landing-page alignment, attribution, budget pacing, and experiment design. The goal is to distinguish useful signals from platform noise and decide what to scale, what to revise, and what to stop.",
+        "intro_ar": "الإعلام المدفوع استثمار مضبوط وليس بديلًا عن الاستراتيجية. يبحث هذا الأرشيف في صياغة العرض واختيار الجمهور واختبار المواد الإبداعية وتوافق صفحة الهبوط والإسناد وتوزيع الميزانية وتصميم التجارب. الهدف هو تمييز الإشارات المفيدة من ضوضاء المنصة وتحديد ما يستحق التوسّع أو المراجعة أو الإيقاف."
+      },
+      {
+        "slug": "brand-identity",
+        "en": "Brand Identity Development",
+        "ar": "تطوير الهوية التجارية",
+        "description_en": "Insights on shaping a distinctive brand through positioning, verbal identity, visual systems, and consistent application.",
+        "description_ar": "رؤى لبناء علامة مميزة عبر التموضع والهوية اللفظية والنظام البصري والتطبيق المتسق.",
+        "intro_en": "Identity is the repeatable expression of a business promise. These pieces explore positioning, naming, tone of voice, logos, typography, color, guidelines, and the practical handoff of a system to teams and suppliers. They help separate strategic identity decisions from decoration so recognition and trust can compound across every customer touchpoint.",
+        "intro_ar": "الهوية هي التعبير القابل للتكرار عن وعد الشركة. تستكشف هذه المواد التموضع والتسمية ونبرة الخطاب والشعار والخط واللون والإرشادات وتسليم النظام عمليًا إلى الفرق والموردين. وهي تساعد على فصل قرارات الهوية الاستراتيجية عن الزخرفة كي يتراكم التعرّف والثقة في كل نقطة تواصل مع العميل."
+      },
+      {
+        "slug": "social-media",
+        "en": "Social Media Management & Content Creation",
+        "ar": "إدارة وسائل التواصل وصناعة المحتوى",
+        "description_en": "Practical approaches to channel strategy, editorial planning, content production, community work, and useful reporting.",
+        "description_ar": "مقاربات عملية لاستراتيجية القنوات والتخطيط التحريري وإنتاج المحتوى وإدارة المجتمع والتقارير المفيدة.",
+        "intro_en": "Consistent publishing only matters when it serves a defined audience and business objective. Learn how to choose channels, build an editorial system, brief creative work, adapt formats, manage community responses, and read performance beyond vanity metrics. The emphasis is a production rhythm a real team can sustain without losing relevance or brand character.",
+        "intro_ar": "لا يفيد النشر المنتظم إلا عندما يخدم جمهورًا محددًا وهدفًا تجاريًا واضحًا. تعلّم اختيار القنوات وبناء نظام تحريري وكتابة موجز إبداعي وتكييف الصيغ وإدارة تفاعل المجتمع وقراءة الأداء بعيدًا عن مؤشرات المظاهر. التركيز على إيقاع إنتاج يستطيع فريق حقيقي الاستمرار فيه من دون فقدان الصلة أو شخصية العلامة."
+      },
+      {
+        "slug": "ecommerce",
+        "en": "E-commerce & Custom Systems Development",
+        "ar": "تطوير المتاجر الإلكترونية والأنظمة المخصّصة",
+        "description_en": "Guidance for reliable commerce and custom systems, from product data and checkout to integrations, operations, and scale.",
+        "description_ar": "إرشادات لمتاجر وأنظمة مخصّصة موثوقة من بيانات المنتجات والدفع إلى التكاملات والتشغيل والتوسّع.",
+        "intro_en": "Digital commerce succeeds in the operational details customers never see. This collection covers catalog structure, checkout friction, payment and shipping flows, integrations, inventory, analytics, security, and the choice between standard platforms and custom development. It is designed to help teams map requirements before implementation and grow without rebuilding the foundation each season.",
+        "intro_ar": "ينجح التاجر الرقمي في التفاصيل التشغيلية التي لا يراها العميل. تغطي هذه المجموعة بنية الكتالوج واحتكاك الدفع وتدفقات السداد والشحن والتكاملات والمخزون والتحليلات والأمان والاختيار بين المنصات الجاهزة والتطوير المخصّص. وهي تساعد الفرق على رسم المتطلبات قبل التنفيذ والنمو من دون إعادة بناء الأساس كل موسم."
+      }
     ]
   },
 

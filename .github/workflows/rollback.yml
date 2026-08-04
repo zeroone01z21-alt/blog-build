@@ -1,0 +1,165 @@
+# استعادة blog/ من commit سليم في مستودع الموقع، بلا إعادة كتابة تاريخ main.
+name: rollback-blog
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_commit:
+        description: SHA كامل (40 محرفًا) من zero2one-web يحوي blog/ السليم
+        required: true
+      reason:
+        description: سبب التراجع
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blog-site-write
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: استعادة المدونة والتحقق الحي
+    runs-on: ubuntu-latest
+    steps:
+      - name: أدوات المدونة
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: بدء إشارة المراقبة الاختيارية
+        continue-on-error: true
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: python3 tools/healthcheck.py start
+
+      - name: بصمات الضوابط
+        id: controls
+        run: python3 tools/check_controls.py
+
+      - name: التحقق من طلب التراجع
+        id: validate_input
+        env:
+          SITE_COMMIT: ${{ inputs.site_commit }}
+        run: |
+          set -euo pipefail
+          [[ "$SITE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "::error::أدخل SHA كاملًا من 40 محرفًا صغيرًا."; exit 1;
+          }
+
+      - name: مستودع الموقع
+        id: site_checkout
+        env:
+          TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${TOKEN:-}" || { echo "::error::SITE_REPO_TOKEN غير مضبوط"; exit 1; }
+          # نحتاج تاريخ main كاملًا لإثبات أن commit المطلوب سلف له، لا commit
+          # عشوائيًا من فرع أو fork آخر.
+          git clone \
+            "https://x-access-token:${TOKEN}@github.com/01team9639-maker/zero2one-web.git" site \
+            2>&1 | sed -E "s#//[^@]*@#//***@#g"
+
+      - name: استخراج blog/ من الإصدار المطلوب
+        id: restore_blog
+        env:
+          SITE_COMMIT: ${{ inputs.site_commit }}
+          DEPLOY_ID: rollback-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          git -C site cat-file -e "${SITE_COMMIT}^{commit}"
+          git -C site merge-base --is-ancestor "$SITE_COMMIT" origin/main || {
+            echo "::error::الـcommit المطلوب ليس ضمن تاريخ main للموقع."; exit 1;
+          }
+          mkdir -p "$RUNNER_TEMP/restore"
+          git -C site archive "$SITE_COMMIT" blog | tar -x -C "$RUNNER_TEMP/restore"
+          test -s "$RUNNER_TEMP/restore/blog/index.html"
+          mkdir -p site/blog
+          rsync -a --delete "$RUNNER_TEMP/restore/blog/" site/blog/
+          printf '%s\n' "$DEPLOY_ID" > site/blog/rollback-deploy.txt
+
+      - name: حارس النطاق
+        id: deploy_scope
+        run: python3 tools/check_deploy_scope.py site
+
+      - name: commit تراجع جديد ثم push
+        id: push_site
+        env:
+          REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          cd site
+          git config user.name "ZERO 2 ONE"
+          git config user.email "01team9639@gmail.com"
+          git add blog
+          git commit -q -m "تراجع المدونة — ${REASON}"
+          git push -q origin main 2>&1 | sed -E "s#//[^@]*@#//***@#g"
+          echo "✅ دُفع تراجع جديد $(git rev-parse --short HEAD)"
+
+      - name: تحقق خارجي من وصول التراجع
+        id: live_verify
+        timeout-minutes: 5
+        run: |
+          python3 tools/wait_for_live.py \
+            site/blog/rollback-deploy.txt \
+            https://zero2one.sa/blog/rollback-deploy.txt \
+            --seconds 240
+
+      - name: إشارة نجاح المراقبة
+        if: success()
+        continue-on-error: true
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: python3 tools/healthcheck.py success
+
+      - name: إشارة فشل المراقبة
+        if: failure()
+        continue-on-error: true
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: python3 tools/healthcheck.py fail
+
+      - name: ملخص التراجع
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          CONTROLS_OUTCOME: ${{ steps.controls.outcome }}
+          INPUT_OUTCOME: ${{ steps.validate_input.outcome }}
+          RESTORE_OUTCOME: ${{ steps.restore_blog.outcome }}
+          PUSH_OUTCOME: ${{ steps.push_site.outcome }}
+          LIVE_OUTCOME: ${{ steps.live_verify.outcome }}
+        run: |
+          set -u
+          if [ "$JOB_STATUS" = "success" ]; then
+            cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## اكتمل التراجع | Rollback verified
+
+          أُنشئ commit تراجع جديد بلا إعادة كتابة تاريخ `main`، ثم تأكد النظام
+          من ظهور علامته على [المدونة الحية](https://zero2one.sa/blog/).
+
+          A new rollback commit was pushed and its live deployment marker was
+          verified externally.
+          SUMMARY
+          else
+            cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## فشل التراجع | Rollback failed
+
+          **للكاتب:** لا تحفظ أو تنشر مرة أخرى الآن. المحتوى محفوظ، لكن على
+          المالك التحقق من حالة الموقع قبل أي محاولة جديدة.
+
+          **Owner:** Review the outcomes and logs below. If push succeeded but
+          live verification failed, production state is unknown; inspect the
+          public rollback marker before retrying.
+          SUMMARY
+            {
+              printf '\n| Stage | Outcome |\n|---|---|\n'
+              printf '| controls | %s |\n' "${CONTROLS_OUTCOME:-not-run}"
+              printf '| input | %s |\n' "${INPUT_OUTCOME:-not-run}"
+              printf '| restore | %s |\n' "${RESTORE_OUTCOME:-not-run}"
+              printf '| push | %s |\n' "${PUSH_OUTCOME:-not-run}"
+              printf '| live-verify | %s |\n' "${LIVE_OUTCOME:-not-run}"
+              printf '\n[Open full run](%s/%s/actions/runs/%s)\n' \
+                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

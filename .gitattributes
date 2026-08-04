@@ -1,0 +1,3 @@
+# Keep the pinned upstream CMS bundle byte-for-byte intact. Its published
+# minified artifact contains intentional trailing spaces in embedded text.
+preview/admin/vendor/sveltia-cms.js -whitespace

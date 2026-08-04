@@ -12,6 +12,7 @@
 #   وكان يُرفع بـFTP. فلا مفرّ من التسليم داخل المستودع.
 #   العزل المفقود يعوّضه tools/check_deploy_scope.py قبل كل دفعة.
 name: build
+run-name: نشر المدونة · ${{ inputs.content_sha || inputs.reason }}
 
 on:
   workflow_dispatch:
@@ -20,13 +21,20 @@ on:
         description: سبب التشغيل
         required: false
         default: حفظ في مستودع المحتوى
+      content_sha:
+        description: SHA محتوى دقيق يرسله blog-content؛ اتركه فارغًا للتشغيل اليدوي
+        required: false
+        default: ""
 
 permissions:
   contents: read
 
 concurrency:
-  group: build
-  cancel-in-progress: true
+  # البناء والتراجع يكتبان zero2one-web/main. المجموعة الواحدة تمنع سباق
+  # push، والطابور الكامل يمنع استبدال تشغيل منتظر عند وصول تشغيل ثالث.
+  group: blog-site-write
+  queue: max
+  cancel-in-progress: false
 
 env:
   HUGO_VERSION: "0.164.0"
@@ -38,21 +46,68 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: قوالب المدونة
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
+      - name: بدء إشارة المراقبة الاختيارية
+        id: health_start
+        continue-on-error: true
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: python3 tools/healthcheck.py start
+
+      - name: تثبيت مرجع المحتوى المطلوب
+        env:
+          CONTENT_SHA: ${{ inputs.content_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$CONTENT_SHA" ] && [[ ! "$CONTENT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::content_sha يجب أن يكون SHA كاملًا من 40 محرفًا صغيرًا."
+            exit 1
+          fi
+
       - name: المحتوى
+        id: content_checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: zeroone01z21-alt/blog-content
+          ref: ${{ inputs.content_sha || 'main' }}
           path: .content-src
 
       - name: التحقق من بصمات الضوابط
+        id: controls
         run: python3 tools/check_controls.py
 
-      - name: تدقيق المحتوى
-        run: python3 tools/check_content.py .content-src/content
+      - name: فحص لوحة الكاتب المولّدة
+        id: cms
+        run: python3 tools/check_cms.py
+
+      - name: تجهيز المحتوى واستبعاد المؤرشف
+        id: prepare_content
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/prepare-content.log"
+          set +e
+          python3 tools/prepare_content.py .content-src/content >"$report" 2>&1
+          exit_code=$?
+          set -e
+          cat "$report"
+          exit "$exit_code"
+
+      - name: تدقيق المحتوى الجاهز للنشر
+        id: content_check
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/content-check.log"
+          set +e
+          python3 tools/check_content.py content >"$report" 2>&1
+          exit_code=$?
+          set -e
+          cat "$report"
+          exit "$exit_code"
 
       - name: تثبيت Hugo ببصمة الإصدار
+        id: hugo_install
         run: |
           set -euo pipefail
           f="hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
@@ -61,30 +116,35 @@ jobs:
           tar -xzf "$f" hugo && sudo mv hugo /usr/local/bin/
           hugo version
 
-      - name: تجهيز المحتوى
-        run: |
-          set -euo pipefail
-          # العقد يقول content/blog/<slug>/ في مستودع المحتوى، وbaseURL هنا
-          # يحمل /blog/ أصلًا — فلو أبقينا القسم لأنتج /blog/blog/.
-          rm -rf content && mkdir -p content
-          if [ -d .content-src/content/blog ]; then
-            cp -R .content-src/content/blog/. content/
-          fi
-          for f in .content-src/content/_index.*.md; do
-            [ -e "$f" ] && cp "$f" content/ || true
-          done
-          ls -A content | head -20
-
       - name: البناء
+        id: hugo_build
         run: |
           set -euo pipefail
           hugo --gc --minify --destination public
           test -s public/index.html
 
+      - name: فحص خرائط البحث وRSS وIndexNow
+        id: indexing
+        run: python3 tools/check_indexing.py public
+
+      - name: فحص SEO وقواعد الخادم
+        id: seo
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/seo-check.log"
+          set +e
+          python3 tools/check_seo.py public >"$report" 2>&1
+          exit_code=$?
+          set -e
+          cat "$report"
+          exit "$exit_code"
+
       - name: ميزانيات الأداء
+        id: budgets
         run: python3 tools/check_budgets.py public
 
       - name: مستودع الموقع
+        id: site_checkout
         env:
           TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
         run: |
@@ -98,18 +158,28 @@ jobs:
             2>&1 | sed -E "s#//[^@]*@#//***@#g"
 
       - name: استبدال blog/ وحده
+        id: replace_blog
         run: |
           set -euo pipefail
-          rm -rf site/blog
           mkdir -p site/blog
-          cp -R public/. site/blog/
+          rsync -a --delete public/ site/blog/
+
+      - name: تجهيز إخطار IndexNow
+        id: indexnow_collect
+        run: |
+          python3 tools/indexnow.py collect site \
+            --output "$RUNNER_TEMP/indexnow.json" \
+            --deployment-id "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
       - name: 🔒 حارس النطاق
+        id: deploy_scope
         run: python3 tools/check_deploy_scope.py site
 
       - name: الدفع
+        id: push_site
         env:
           TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
+          REASON: ${{ inputs.reason }}
         run: |
           set -euo pipefail
           cd site
@@ -120,6 +190,121 @@ jobs:
           git config user.name "ZERO 2 ONE"
           git config user.email "01team9639@gmail.com"
           git add blog
-          git commit -q -m "نشر المدونة — ${{ inputs.reason }}"
+          git commit -q -m "نشر المدونة — ${REASON}"
           git push -q origin main 2>&1 | sed -E "s#//[^@]*@#//***@#g"
           echo "✅ نُشر $(git rev-parse --short HEAD)"
+
+      - name: تحقق خارجي من وصول النشر
+        id: live_verify
+        timeout-minutes: 5
+        run: |
+          python3 tools/wait_for_live.py \
+            site/blog/indexnow-deploy.txt \
+            https://zero2one.sa/blog/indexnow-deploy.txt \
+            --seconds 240
+
+      # النشر عبر Hostinger غير متزامن. الأداة تنتظر علامة هذا البناء تحديداً
+      # قبل الإخطار، حتى لا يزور محرك البحث النسخة السابقة. تعطل IndexNow لا
+      # يحوّل نشرًا ناجحًا إلى فشل؛ يعاد اكتشاف الروابط من الخرائط لاحقًا.
+      - name: إخطار IndexNow بعد ظهور النشر
+        id: indexnow_submit
+        continue-on-error: true
+        timeout-minutes: 8
+        run: python3 tools/indexnow.py submit "$RUNNER_TEMP/indexnow.json"
+
+      - name: إشارة نجاح المراقبة
+        if: success()
+        continue-on-error: true
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: python3 tools/healthcheck.py success
+
+      - name: إشارة فشل المراقبة
+        if: failure()
+        continue-on-error: true
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: python3 tools/healthcheck.py fail
+
+      - name: ملخص النتيجة للكاتب والمالك
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+          PREPARE_OUTCOME: ${{ steps.prepare_content.outcome }}
+          CONTENT_OUTCOME: ${{ steps.content_check.outcome }}
+          CONTROLS_OUTCOME: ${{ steps.controls.outcome }}
+          CMS_OUTCOME: ${{ steps.cms.outcome }}
+          BUILD_OUTCOME: ${{ steps.hugo_build.outcome }}
+          SEO_OUTCOME: ${{ steps.seo.outcome }}
+          PUSH_OUTCOME: ${{ steps.push_site.outcome }}
+          LIVE_OUTCOME: ${{ steps.live_verify.outcome }}
+          INDEXNOW_OUTCOME: ${{ steps.indexnow_submit.outcome }}
+        run: |
+          set -u
+          append_log() {
+            report_file="$1"
+            report_title="$2"
+            if [ -s "$report_file" ]; then
+              printf '\n### %s\n\n' "$report_title" >> "$GITHUB_STEP_SUMMARY"
+              while IFS= read -r report_line; do
+                printf '    %s\n' "$report_line" >> "$GITHUB_STEP_SUMMARY"
+              done < "$report_file"
+            fi
+          }
+
+          if [ "$PREPARE_OUTCOME" = "failure" ] || \
+             [ "$CONTENT_OUTCOME" = "failure" ] || \
+             [ "$SEO_OUTCOME" = "failure" ]; then
+            cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## تعذّر نشر المحتوى | Content needs attention
+
+          **للكاتب:** الموقع الحي لم يتغيّر. اقرأ الرسالة العربية أدناه؛ ستذكر
+          الملف أو الصفحة والمشكلة. إن كانت تخص عنوانًا أو صورة أو ترتيب عناوين
+          مقالك، أصلحها في اللوحة واحفظ مرة واحدة. إن كانت تخص عدة صفحات أو
+          قالبًا، لا تعد المحاولة وأرسل رابط هذا التشغيل إلى المالك.
+
+          **Owner:** A content/preparation/page-SEO gate stopped the run before
+          deployment. The live site was not modified. The indented validator
+          output below is untrusted content rendered as code; distinguish a
+          writer-fixable page issue from a template-wide regression.
+          SUMMARY
+            append_log "$RUNNER_TEMP/prepare-content.log" "تجهيز المحتوى"
+            append_log "$RUNNER_TEMP/content-check.log" "تدقيق المحتوى"
+            append_log "$RUNNER_TEMP/seo-check.log" "فحص SEO للصفحات الناتجة"
+          elif [ "$JOB_STATUS" = "success" ]; then
+            cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## تم النشر والتحقق | Published and verified
+
+          **للكاتب:** اكتمل النشر، وتحقّق النظام من ظهور النسخة على الموقع الحي.
+          افتح [المدونة](https://zero2one.sa/blog/) لمراجعتها.
+
+          **Owner:** Build gates, site-scope guard, push, and external live marker
+          verification all succeeded.
+          SUMMARY
+            if [ "$INDEXNOW_OUTCOME" = "failure" ]; then
+              printf '\n> IndexNow failed after a verified deployment; publishing remains successful.\n' \
+                >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## مشكلة تقنية في النشر | Technical publishing failure
+
+          **للكاتب:** لم يؤكد النظام ظهور المقال على الموقع. لا تكرر الحفظ أو
+          النشر الآن؛ المحتوى محفوظ، وعلى المالك مراجعة المشكلة التقنية أولًا.
+
+          **Owner:** Inspect the stage outcomes below and the full logs. If push
+          succeeded but live verification failed, treat production state as unknown
+          and verify the public marker before retrying or running rollback.
+          SUMMARY
+            {
+              printf '\n| Stage | Outcome |\n|---|---|\n'
+              printf '| controls | %s |\n' "${CONTROLS_OUTCOME:-not-run}"
+              printf '| cms | %s |\n' "${CMS_OUTCOME:-not-run}"
+              printf '| hugo-build | %s |\n' "${BUILD_OUTCOME:-not-run}"
+              printf '| seo | %s |\n' "${SEO_OUTCOME:-not-run}"
+              printf '| push | %s |\n' "${PUSH_OUTCOME:-not-run}"
+              printf '| live-verify | %s |\n' "${LIVE_OUTCOME:-not-run}"
+              printf '\n[Open full run](%s/%s/actions/runs/%s)\n' \
+                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

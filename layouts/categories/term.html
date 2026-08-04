@@ -1,0 +1,18 @@
+{{ define "main" }}
+<div class="blog-index category-archive">
+  <p class="eyebrow">{{ T "category" }}</p>
+  <h1>{{ .Title }}</h1>
+  {{- with .Params.intro }}<p class="blog-intro category-intro">{{ . }}</p>{{ end }}
+  {{- $posts := where .Pages "Params.archived" "ne" true }}
+  {{- if $posts }}
+  <ul class="cards">
+    {{- range $posts.ByDate.Reverse }}
+      {{- partial "post-card.html" . }}
+    {{- end }}
+  </ul>
+  {{- else }}
+  <p class="empty">{{ T "noPostsInCategory" }}</p>
+  {{- end }}
+  <p class="post-back"><a href="{{ (.Site.GetPage "/categories").RelPermalink }}">{{ T "backArrow" }} {{ T "allCategories" }}</a></p>
+</div>
+{{ end }}

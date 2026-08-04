@@ -1,0 +1,12 @@
+{{- $resource := .Page.Resources.GetMatch .Destination -}}
+{{- with $resource -}}
+  {{- partial "responsive-image.html" (dict
+    "image" .
+    "alt" $.Text
+    "class" "post-content-image"
+    "loading" "lazy"
+    "sizes" "(max-width: 42rem) calc(100vw - 2rem), 38rem"
+  ) -}}
+{{- else -}}
+  {{- errorf "صورة Markdown «%s» في %s ليست داخل حزمة المقال أو غير موجودة" .Destination .Page.File.Path -}}
+{{- end -}}

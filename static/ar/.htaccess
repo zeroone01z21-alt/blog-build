@@ -1,0 +1,13 @@
+# Arabic error pages for requests below /blog/ar/.
+# Kept separate because ErrorDocument is scoped by directory; this avoids a
+# redirect, script, language cookie, or fragile request-time expression.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Add only exact, approved paths. Patterns are relative to /blog/ar/.
+    # BEGIN verified Arabic 410 rules
+    # No Arabic URL has been verified as permanently removed yet.
+    # END verified Arabic 410 rules
+</IfModule>
+
+ErrorDocument 404 /blog/ar/404.html
+ErrorDocument 410 /blog/ar/404.html
