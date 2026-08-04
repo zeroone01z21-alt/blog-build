@@ -81,6 +81,9 @@ jobs:
           hugo --gc --minify --destination public
           test -s public/index.html
 
+      - name: فحص خرائط البحث وRSS وIndexNow
+        run: python3 tools/check_indexing.py public
+
       - name: ميزانيات الأداء
         run: python3 tools/check_budgets.py public
 
@@ -104,12 +107,19 @@ jobs:
           mkdir -p site/blog
           cp -R public/. site/blog/
 
+      - name: تجهيز إخطار IndexNow
+        run: |
+          python3 tools/indexnow.py collect site \
+            --output "$RUNNER_TEMP/indexnow.json" \
+            --deployment-id "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
       - name: 🔒 حارس النطاق
         run: python3 tools/check_deploy_scope.py site
 
       - name: الدفع
         env:
           TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
+          REASON: ${{ inputs.reason }}
         run: |
           set -euo pipefail
           cd site
@@ -120,6 +130,14 @@ jobs:
           git config user.name "ZERO 2 ONE"
           git config user.email "01team9639@gmail.com"
           git add blog
-          git commit -q -m "نشر المدونة — ${{ inputs.reason }}"
+          git commit -q -m "نشر المدونة — ${REASON}"
           git push -q origin main 2>&1 | sed -E "s#//[^@]*@#//***@#g"
           echo "✅ نُشر $(git rev-parse --short HEAD)"
+
+      # النشر عبر Hostinger غير متزامن. الأداة تنتظر علامة هذا البناء تحديداً
+      # قبل الإخطار، حتى لا يزور محرك البحث النسخة السابقة. تعطل IndexNow لا
+      # يحوّل نشرًا ناجحًا إلى فشل؛ يعاد اكتشاف الروابط من الخرائط لاحقًا.
+      - name: إخطار IndexNow بعد ظهور النشر
+        continue-on-error: true
+        timeout-minutes: 8
+        run: python3 tools/indexnow.py submit "$RUNNER_TEMP/indexnow.json"

@@ -1,7 +1,6 @@
 # إعداد Hugo — المدونة
 #
-# ⚠️ هذا إعداد **إثبات** (بند 1 من أسبوع الإثبات)، لا إعداد المرحلة 2.
-# غرضه صفحة واحدة بنسق كامل نتحقق منها قبل بناء القوالب الحقيقية.
+# إعداد الإنتاج للمدونة. إصدار Hugo نفسه مثبت مع بصمته في سير البناء.
 
 baseURL = 'https://zero2one.sa/blog/'
 title = 'مدونة ZERO 2 ONE'
@@ -10,12 +9,16 @@ enableGitInfo = false
 timeZone = 'Asia/Riyadh'
 summaryLength = 40
 
-# التصنيفات ستُبنى بقوالبها في المرحلة 2؛ الخريطة تُولَّد من أداتنا
+# التصنيفات مؤجلة إلى T8. Hugo يولّد فهرس الخرائط وخريطة لكل لغة، ثم تتحقق
+# منها بوابة tools/check_indexing.py قبل أي نشر.
 disableKinds = ['taxonomy', 'term']
 
 # قرار بند صفر: الإنجليزية بلا بادئة، العربية ببادئة — مطابقةً للموقع
 defaultContentLanguage = 'en'
 defaultContentLanguageInSubdir = false
+# لا ننشئ /en/index.html كتحويل HTML إلى الجذر. الإنجليزية أصلًا في
+# /blog/، والتحويل على جهة العميل يضيف صفحة ناقصة إلى فحوص SEO.
+disableDefaultSiteRedirect = true
 
 [languages]
   [languages.en]

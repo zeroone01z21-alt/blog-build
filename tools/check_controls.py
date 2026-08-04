@@ -43,6 +43,8 @@ GUARDED_FILES = [
     "tools/check_deploy_scope.py",   # يمنع لمس ملفات الموقع خارج blog/
     "tools/check_budgets.py",        # يمنع تآكل الأداء
     "tools/check_content.py",        # يمنع النشر الناقص
+    "tools/check_indexing.py",       # يثبت عقد الخرائط وRSS وIndexNow
+    "tools/indexnow.py",             # يحصر الإخطار في روابط المدونة المنشورة
 ]
 EXCLUDE = {"controls/fingerprints.txt"}
 

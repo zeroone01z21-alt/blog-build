@@ -46,6 +46,15 @@ other = "الصفحة غير موجودة"
 [notFoundMsg]
 other = "هذه الصفحة غير موجودة، أو تغيّر عنوانها."
 
+[notFoundDescription]
+other = "تعذّر العثور على الصفحة المطلوبة. تصفّح أحدث مقالات ZERO 2 ONE أو عد إلى الموقع الرئيسي."
+
+[feedTitle]
+other = "خلاصة مدونة ZERO 2 ONE"
+
+[feedDescription]
+other = "مقالات عملية في التسويق الرقمي من فريق ZERO 2 ONE في الرياض."
+
 [rights]
 other = "جميع الحقوق محفوظة."
 

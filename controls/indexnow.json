@@ -1,0 +1,8 @@
+{
+  "endpoint": "https://api.indexnow.org/indexnow",
+  "host": "zero2one.sa",
+  "key_file": "static/f5cfe00e-7ebd-45f8-92d8-ea342cc22a4c.txt",
+  "key_location": "https://zero2one.sa/blog/f5cfe00e-7ebd-45f8-92d8-ea342cc22a4c.txt",
+  "deployment_marker": "https://zero2one.sa/blog/indexnow-deploy.txt",
+  "url_prefix": "https://zero2one.sa/blog/"
+}

@@ -46,6 +46,15 @@ other = "Page not found"
 [notFoundMsg]
 other = "This page does not exist, or its address has changed."
 
+[notFoundDescription]
+other = "The page you requested could not be found. Browse the latest ZERO 2 ONE articles or return to the main website."
+
+[feedTitle]
+other = "ZERO 2 ONE Blog RSS"
+
+[feedDescription]
+other = "Practical digital marketing articles from ZERO 2 ONE in Riyadh."
+
 [rights]
 other = "All rights reserved."
 

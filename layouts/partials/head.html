@@ -1,8 +1,10 @@
 {{- /*
   طبقة SEO — القسم 8.2
-  كل عنصر هنا إلزامي، والبناء يفشل عند غياب أيٍّ منه (tools/check_seo.py).
+  فحص الفهرسة الحالي يغطي الخرائط وRSS، وT9 سيضيف tools/check_seo.py
+  لفرض عناصر الصفحة نفسها قبل النشر.
 */ -}}
 {{- $isPost := eq .Kind "page" -}}
+{{- $is404 := eq .Kind "404" -}}
 {{- /*
   صورة المشاركة من موارد حزمة الصفحة.
   ⚠️ لا تبنِ الرابط بـ (printf "%s%s" .Permalink $name): Hugo يضع موارد
@@ -13,13 +15,17 @@
 {{- with .Params.featured_image -}}
   {{- with $.Resources.GetMatch . }}{{ $img = .Permalink }}{{ end -}}
 {{- end -}}
-{{- $desc := .Description | default .Site.Params.description | default .Summary -}}
+{{- $desc := cond $is404 (T "notFoundDescription") (.Description | default .Site.Params.description | default .Summary) -}}
+{{- $pageTitle := cond $is404 (T "notFound") (cond .IsHome .Site.Title .Title) -}}
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} — {{ .Site.Title }}{{ end }}</title>
+<title>{{ $pageTitle }}{{ if not .IsHome }} — {{ .Site.Title }}{{ end }}</title>
 <meta name="description" content="{{ $desc | plainify | truncate 160 "" }}">
+{{- if $is404 }}
+<meta name="robots" content="noindex, follow">
+{{- end }}
 <link rel="canonical" href="{{ .Permalink }}">
 
 {{/* hreflang متبادل + x-default → الإنجليزية (قرار بند صفر) */}}
@@ -36,7 +42,7 @@
 <meta property="og:type" content="{{ if $isPost }}article{{ else }}website{{ end }}">
 <meta property="og:site_name" content="{{ .Site.Params.organization }}">
 <meta property="og:locale" content="{{ if eq .Lang "ar" }}ar_SA{{ else }}en_US{{ end }}">
-<meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}">
+<meta property="og:title" content="{{ $pageTitle }}">
 <meta property="og:description" content="{{ $desc | plainify | truncate 160 "" }}">
 <meta property="og:url" content="{{ .Permalink }}">
 <meta property="og:image" content="{{ $img }}">
@@ -49,9 +55,14 @@
 {{- end }}
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}">
+<meta name="twitter:title" content="{{ $pageTitle }}">
 <meta name="twitter:description" content="{{ $desc | plainify | truncate 160 "" }}">
 <meta name="twitter:image" content="{{ $img }}">
+
+{{/* اكتشاف RSS — رابط feed اللغة الحالية من كل صفحة */}}
+{{- with .Site.Home.OutputFormats.Get "RSS" }}
+<link rel="alternate" type="{{ .MediaType.Type }}" href="{{ .Permalink }}" title="{{ T "feedTitle" }}">
+{{- end }}
 
 {{/* الخطوط مستضافة ذاتيًّا — تحميل مسبق للوزن الأساسي فقط (بند 13) */}}
 {{/* relURL يبني المسار من baseURL — لا تكتبه يدويًّا:
