@@ -122,8 +122,8 @@ def validate_sitemap_index(public: Path, config: dict[str, str], check: Check) -
         for node in root.findall(f"{{{SITEMAP_NS}}}sitemap")
     }
     expected = {
-        f'{config["url_prefix"]}en/sitemap.xml',
-        f'{config["url_prefix"]}ar/sitemap.xml',
+        f'{config["url_prefix"]}sitemap-en.xml',
+        f'{config["url_prefix"]}sitemap-ar.xml',
     }
     check.require(locations == expected,
                   f"فهرس الخرائط لا يطابق اللغتين: {sorted(locations)}")
@@ -131,6 +131,7 @@ def validate_sitemap_index(public: Path, config: dict[str, str], check: Check) -
 
 def validate_language_sitemap(
     path: Path,
+    sitemap_url: str,
     language: str,
     config: dict[str, str],
     check: Check,
@@ -139,6 +140,8 @@ def validate_language_sitemap(
     if root is None:
         return set(), {}
     check.require(root.tag == f"{{{SITEMAP_NS}}}urlset", f"{path} ليست urlset")
+    parsed_sitemap = urlparse(sitemap_url)
+    sitemap_parent = parsed_sitemap.path.rsplit("/", 1)[0] + "/"
     urls: set[str] = set()
     translations: dict[str, dict[str, str]] = {}
     for node in root.findall(f"{{{SITEMAP_NS}}}url"):
@@ -148,6 +151,13 @@ def validate_language_sitemap(
         if not location:
             continue
         urls.add(location)
+        parsed_location = urlparse(location)
+        check.require(
+            parsed_location.scheme == parsed_sitemap.scheme
+            and parsed_location.netloc == parsed_sitemap.netloc
+            and parsed_location.path.startswith(sitemap_parent),
+            f"رابط خارج نطاق دليل ملف الخريطة {sitemap_url}: {location}",
+        )
         check.require(location.startswith(config["url_prefix"]),
                       f"رابط خارج /blog/ في {path.name}: {location}")
         if language == "ar":
@@ -264,12 +274,16 @@ def main() -> int:
 
     required = [
         "index.xml", "ar/index.xml", "sitemap.xml",
-        "en/sitemap.xml", "ar/sitemap.xml",
+        "sitemap-en.xml", "sitemap-ar.xml",
     ]
     for rel in required:
         check.require((public / rel).is_file(), f"مخرج فهرسة مفقود: {rel}")
     check.require(not (public / "en" / "index.html").exists(),
                   "Hugo ولّد تحويل /en/ غير المرغوب؛ فعّل disableDefaultSiteRedirect")
+    check.require(not (public / "en" / "sitemap.xml").exists(),
+                  "خريطة الإنجليزية القديمة ما زالت متداخلة تحت /en/")
+    check.require(not (public / "ar" / "sitemap.xml").exists(),
+                  "خريطة العربية القديمة ما زالت متداخلة تحت /ar/")
 
     config = validate_config(public, check)
     if config is None or any(not (public / rel).is_file() for rel in required):
@@ -277,9 +291,11 @@ def main() -> int:
 
     validate_sitemap_index(public, config, check)
     en_urls, en_translations = validate_language_sitemap(
-        public / "en" / "sitemap.xml", "en", config, check)
+        public / "sitemap-en.xml", f'{config["url_prefix"]}sitemap-en.xml',
+        "en", config, check)
     ar_urls, ar_translations = validate_language_sitemap(
-        public / "ar" / "sitemap.xml", "ar", config, check)
+        public / "sitemap-ar.xml", f'{config["url_prefix"]}sitemap-ar.xml',
+        "ar", config, check)
     translations = {**en_translations, **ar_translations}
     validate_reciprocal_translations(en_urls, ar_urls, translations, check)
     en_items = validate_rss(public / "index.xml", "en", en_urls, config, check)

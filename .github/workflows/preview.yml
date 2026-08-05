@@ -94,6 +94,7 @@ jobs:
             --environment preview \
             --baseURL "$PREVIEW_BASE_URL" \
             --destination preview-public
+          python3 tools/normalize_sitemaps.py preview-public
           test -s preview-public/index.html
 
       - name: فحص noindex وروابط المعاينة

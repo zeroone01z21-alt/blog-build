@@ -121,6 +121,7 @@ jobs:
         run: |
           set -euo pipefail
           hugo --gc --minify --destination public
+          python3 tools/normalize_sitemaps.py public
           test -s public/index.html
 
       - name: فحص خرائط البحث وRSS وIndexNow
