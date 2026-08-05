@@ -198,7 +198,7 @@ Sitemap: https://zero2one.sa/blog/sitemap.xml
 
 ## 8. لوحة الكاتب والمعاينة
 
-- Sveltia CMS v0.164.2 مستضافة ذاتيًا في `/preview/admin/` ببصمة SHA-256 وSRI.
+- Sveltia CMS v0.179.0 مستضافة ذاتيًا في `/preview/admin/` ببصمة SHA-256 وSRI.
 - اللوحة تكتب `index.en.md` و`index.ar.md` في `blog-content:main`، بلا حذف أو
   نسخ، وتضغط الصور إلى WebP حتى 1600×1600 قبل بوابة 500KB.
 - `preview.yml` يبني المسودات على `https://preview.zero2one.sa/blog/` ويرفع

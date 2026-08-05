@@ -14,8 +14,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ADMIN = os.path.join(ROOT, "preview", "admin")
 VENDOR = os.path.join(ADMIN, "vendor", "sveltia-cms.js")
 INDEX = os.path.join(ADMIN, "index.html")
-EXPECTED_VENDOR_SHA256 = "bd77155cd4bc50fc4b45ca9ae67e0555188987edc9f01a55f98344f975614628"
-EXPECTED_SRI = "sha384-8jh4ZuqWt5C7gHKiGgd+Ywoy7eALhOiKhUKx/m6KhUXgomY4Jx6Wf+j++aBPeOhf"
+EXPECTED_VENDOR_SHA256 = "bc0fd1a08e46fc6b80d5dc4c90951bb0eeed346ce8fbadb7dd6dd230379abc03"
+EXPECTED_SRI = "sha384-mVjEYeNjgFrDMldKYRXtGqYoTQX7l0LLf7wSUABCSIcQqRQPQckldCncpzRv0zHF"
 
 
 def load_generator():
@@ -156,7 +156,7 @@ def main() -> int:
             print(f"     - {problem}")
         return 1
 
-    print("  ✅ لوحة الكاتب سليمة: Sveltia 0.164.2 محلية، الحقول من المخطط، والحذف معطل")
+    print("  ✅ لوحة الكاتب سليمة: Sveltia 0.179.0 محلية، الحقول من المخطط، والحذف معطل")
     if oauth_pending:
         print("  ⚠️ OAuth غير مفعّل: على المالك وضع oauth_base_url الحقيقي قبل النشر")
     return 0
