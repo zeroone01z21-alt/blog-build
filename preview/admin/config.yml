@@ -29,6 +29,8 @@ output:
     quote: "double"
     indent_size: 2
     indent_sequences: true
+media_folder: "/content/blog"
+public_folder: "/blog"
 media_libraries:
   all:
     max_file_size: 512000

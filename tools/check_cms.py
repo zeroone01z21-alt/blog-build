@@ -104,6 +104,12 @@ def main() -> int:
     if i18n.get("locales") != schema["languages"]["available"]:
         problems.append("لغات اللوحة انحرفت عن schema.json")
 
+    collection_folder, public_folder = generator.bundle_locations(schema)
+    if config.get("media_folder") != f"/{collection_folder}":
+        problems.append("مجلد الوسائط الجذري مفقود أو خارج نطاق محتوى المدونة")
+    if config.get("public_folder") != public_folder:
+        problems.append("مسار الوسائط العام لا يطابق مسار المدونة")
+
     collections = config.get("collections", [])
     if len(collections) != 1 or collections[0].get("name") != "posts":
         problems.append("يجب أن تكون posts المجموعة التحريرية الوحيدة")
@@ -113,8 +119,10 @@ def main() -> int:
             problems.append("زر حذف المقالات غير معطل")
         if posts.get("duplicate") is not False:
             problems.append("نسخ المقالات غير معطل")
-        if posts.get("folder") != "content/blog" or posts.get("path") != "{{slug}}/index":
+        if posts.get("folder") != collection_folder or posts.get("path") != "{{slug}}/index":
             problems.append("مسار حزمة Hugo غير صحيح")
+        if posts.get("media_folder") != "" or posts.get("public_folder") != "":
+            problems.append("صور المقال يجب أن تبقى داخل حزمة Hugo وبمسار نسبي")
 
         fields = {field.get("name"): field for field in posts.get("fields", [])}
         expected_names = set(schema["fields"]) | {"body"}

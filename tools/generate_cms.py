@@ -67,6 +67,19 @@ def load_json(path: str) -> dict[str, Any]:
     return data
 
 
+def bundle_locations(schema: dict[str, Any]) -> tuple[str, str]:
+    """اشتق مساري مستودع المحتوى والرابط العام من العقد المركزي."""
+    template = str(schema["bundle"]["path"]).strip("/")
+    marker = "/<slug>"
+    if not template.endswith(marker):
+        raise ValueError("bundle.path يجب أن ينتهي بـ /<slug>/")
+
+    repository_folder = template[: -len(marker)]
+    default_locale = schema["languages"]["default"]
+    public_folder = str(schema["languages"]["paths"][default_locale]).rstrip("/") or "/"
+    return repository_folder, public_folder
+
+
 def scalar(value: Any) -> str:
     if value is True:
         return "true"
@@ -214,6 +227,7 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
 def build_config(schema: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     languages = schema["languages"]
     fields = schema["fields"]
+    collection_folder, public_folder = bundle_locations(schema)
     return {
         "backend": {
             "name": "github",
@@ -241,6 +255,11 @@ def build_config(schema: dict[str, Any], settings: dict[str, Any]) -> dict[str, 
             "omit_empty_optional_fields": True,
             "yaml": {"quote": "double", "indent_size": 2, "indent_sequences": True},
         },
+        # Sveltia 0.179.0 يشترط media_folder جذريًا حتى مع إعداد مجموعة
+        # entry-relative. تقصره هذه القيمة على محتوى المدونة، بينما تبقي
+        # القيمتان الفارغتان داخل posts الصور بجانب index.<lang>.md.
+        "media_folder": f"/{collection_folder}",
+        "public_folder": public_folder,
         "media_libraries": {
             "all": {
                 "max_file_size": int(schema["bundle"]["max_image_bytes"]),
@@ -256,7 +275,7 @@ def build_config(schema: dict[str, Any], settings: dict[str, Any]) -> dict[str, 
                 "label": "المقالات",
                 "label_singular": "مقال",
                 "icon": "article",
-                "folder": "content/blog",
+                "folder": collection_folder,
                 "path": "{{slug}}/index",
                 "slug": "{{fields.slug}}",
                 "identifier_field": "title",
