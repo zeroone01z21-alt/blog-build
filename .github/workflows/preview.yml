@@ -220,19 +220,23 @@ jobs:
 
           # لا نخترع AuthUserFile الخاص بالاستضافة. نسحب ملف الحماية العامل،
           # نثبت بقاء Basic Auth، ونزيل Header فقط قبل إعادته بعد نجاح mirror.
-          lftp -u "$PREVIEW_FTP_USER","$PREVIEW_FTP_PASSWORD" -e "
+          # افتح الجلسة صراحةً، وخذ كلمة المرور من البيئة بدل تمريرها ضمن
+          # argv؛ هذا يمنع تنفيذ أوامر النقل قبل اختيار الموقع ويحمي السر من
+          # الظهور في قائمة العمليات.
+          LFTP_PASSWORD="$PREVIEW_FTP_PASSWORD" lftp -c "
               set cmd:fail-exit yes;
               set net:max-retries 2;
               set net:timeout 20;
               set ftp:ssl-force yes;
               set ftp:ssl-protect-data yes;
               set ssl:verify-certificate yes;
+              open --user \"${PREVIEW_FTP_USER}\" --env-password \"ftp://${PREVIEW_FTP_HOST}\";
               get \"${remote_htaccess}\" -o \"${protection}\";
               bye
-            " "ftp://${PREVIEW_FTP_HOST}"
+            "
           python3 tools/sanitize_preview_htaccess.py "$protection"
 
-          lftp -u "$PREVIEW_FTP_USER","$PREVIEW_FTP_PASSWORD" -e "
+          LFTP_PASSWORD="$PREVIEW_FTP_PASSWORD" lftp -c "
               set cmd:fail-exit yes;
               set net:max-retries 2;
               set net:timeout 20;
@@ -240,9 +244,10 @@ jobs:
               set ftp:ssl-force yes;
               set ftp:ssl-protect-data yes;
               set ssl:verify-certificate yes;
+              open --user \"${PREVIEW_FTP_USER}\" --env-password \"ftp://${PREVIEW_FTP_HOST}\";
               mirror --reverse --delete --no-perms --parallel=2 --verbose=1 \
                 --exclude='(^|/)[.]ht(access|passwd)$' \
                 \"${stage}\" \"${remote_dir}\";
               put \"${protection}\" -o \"${remote_htaccess}\";
               bye
-            " "ftp://${PREVIEW_FTP_HOST}"
+            "
