@@ -125,7 +125,7 @@ def common_field(name: str, rule: dict[str, Any], *, i18n: Any) -> dict[str, Any
     if name in HINTS:
         field["hint"] = HINTS[name]
     if "min_length" in rule:
-        # الحزمة 0.164.2 ومخطط إعدادها الرسمي يستخدمان الصيغة الصغيرة،
+        # الحزمة 0.179.0 ومخطط إعدادها الرسمي يستخدمان الصيغة الصغيرة،
         # رغم أن صفحة التوثيق تعرض minLength/maxLength بحرف L كبير.
         field["minlength"] = int(rule["min_length"])
     if "max_length" in rule:
