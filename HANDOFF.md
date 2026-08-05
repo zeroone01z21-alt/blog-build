@@ -324,11 +324,12 @@ AVIF/WebP بأحجام 480/800/1200 وfallback و`width`/`height` وlazy/fetchpr
 
 ### 🟢 لوحة الكاتب — المرحلة 4
 
-**[T12] وسيط المصادقة** · 🧑 المالك + 🤖
-1. حساب Cloudflare مجاني — **لا ينقل النطاق، Worker على `*.workers.dev` فقط**
-2. نشر [`sveltia-cms-auth`](https://github.com/sveltia/sveltia-cms-auth)
-3. تطبيق OAuth على GitHub، الـcallback إلى الـWorker
-4. **لا يُستخدم «الدخول برمز»** — ينتهي كل 90 يومًا ولا يصلح لكاتب غير تقني
+**[T12] وسيط المصادقة** · ✅ أُنجز خارجيًا وربط بالكود
+نُشر [`sveltia-cms-auth`](https://github.com/sveltia/sveltia-cms-auth) على
+`https://sveltia-cms-auth.01team9639.workers.dev`، وضُبط GitHub OAuth callback
+والسر المشفّر و`ALLOWED_DOMAINS=preview.zero2one.sa`. اختُبر تحويل النطاق
+المسموح ورفض نطاق آخر. لا يُستخدم «الدخول برمز»؛ تبقى دورة الدخول الكاملة
+ضمن اختبار T15 بعد رفع اللوحة.
 
 **[T13] Sveltia مستضافة ذاتيًّا** · ✅ أُنجز برمجيًا
 Sveltia v0.179.0 محلية ومبصومة، و`config.yml` مولّد من العقد، وحذف/نسخ المقال
@@ -341,7 +342,7 @@ Sveltia v0.179.0 محلية ومبصومة، و`config.yml` مولّد من ال
 
 **[T15] بناء المعاينة** · 🟡 الكود جاهز؛ محجوب خارجيًا
 `preview.yml` يبني drafts على `/blog/` ويرفع الجذر والمدونة و`/admin/` بـFTPS.
-يتوقف عمدًا حتى يضبط المالك OAuth وأسرار `PREVIEW_FTP_*` الأربعة.
+OAuth مضبوط؛ يتوقف الرفع عمدًا حتى يضيف المالك أسرار `PREVIEW_FTP_*` الأربعة.
 
 ---
 
