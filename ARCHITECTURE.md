@@ -106,10 +106,11 @@ blog-content/content/
 | المقال | `/blog/{slug}/` | `/blog/ar/{slug}/` |
 | التصنيف | `/blog/categories/{slug}/` | `/blog/ar/categories/{slug}/` |
 | RSS | `/blog/index.xml` | `/blog/ar/index.xml` |
-| خريطة اللغة | `/blog/en/sitemap.xml` | `/blog/ar/sitemap.xml` |
+| خريطة اللغة | `/blog/sitemap-en.xml` | `/blog/sitemap-ar.xml` |
 
-`/blog/en/sitemap.xml` اسم ملف تنظيمي يولده Hugo، وليس دليلًا على وجود صفحات
-إنجليزية تحت `/blog/en/`. `disableDefaultSiteRedirect = true` يمنع توليد
+Hugo يولّد خرائط اللغات أولًا في مجلدات داخلية، ثم ينقلها
+`tools/normalize_sitemaps.py` إلى جذر `/blog/`. هذا إلزامي لأن خريطة داخل
+`/blog/en/` لا تملك نطاقًا يصف روابط `/blog/` الأب. `disableDefaultSiteRedirect = true` يمنع توليد
 `/blog/en/index.html` كتحويل JavaScript ناقص metadata. الإنجليزية أصلًا في
 الجذر، والعربية وحدها ذات بادئة. Apache يعيد `/blog/en/` إلى `/blog/` بـ301.
 
@@ -150,10 +151,11 @@ GitHub expression مباشرة في shell. السبب أمان مهم لأن خ�
 
 ## 6. الفهرسة
 
-Hugo يولّد تلقائيًا:
+Hugo يولّد البنية، ثم تطبّع خطوة ما بعد البناء مواقع الخرائط إلى:
 
 - `/blog/sitemap.xml`: فهرس جامع.
-- `/blog/en/sitemap.xml` و`/blog/ar/sitemap.xml`: خريطة لكل لغة.
+- `/blog/sitemap-en.xml` و`/blog/sitemap-ar.xml`: خريطة لكل لغة في أعلى
+  مجلد مشترك مع كل الروابط التي تصفها.
 - `/blog/index.xml` و`/blog/ar/index.xml`: RSS مترجم لكل لغة.
 
 `tools/check_indexing.py` يثبت قبل النشر:

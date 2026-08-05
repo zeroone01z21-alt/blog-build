@@ -110,7 +110,7 @@ def html_path_to_url(path: str, prefix: str) -> str | None:
 
 def urls_from_sitemaps(repo: Path, config: dict[str, str]) -> set[str]:
     urls: set[str] = set()
-    for rel in ("blog/en/sitemap.xml", "blog/ar/sitemap.xml"):
+    for rel in ("blog/sitemap-en.xml", "blog/sitemap-ar.xml"):
         path = repo / rel
         try:
             root = ET.parse(path).getroot()
@@ -162,8 +162,8 @@ def collect(repo: Path, output: Path, deployment_id: str) -> int:
     }
     inventory = urls_from_sitemaps(repo, config)
     if paths:
-        # نرسل الجرد الحالي مع المحذوفات. هذا يعوّض تشغيلًا سابقًا قد يُلغى
-        # بعد push وقبل الإخطار بسبب cancel-in-progress.
+        # نرسل الجرد الحالي مع المحذوفات. هذا يعوّض إخطارًا سابقًا تعطل بعد
+        # push، ويضمن أن URL المحذوف يبقى حاضرًا في طلب إعادة الزحف.
         urls = inventory | changed_urls
         marker = deployment_id
         marker_name = Path(urlparse(config["deployment_marker"]).path).name

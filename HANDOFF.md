@@ -93,6 +93,7 @@ GEO EXCELLENT · 48 كتلة JSON-LD صالحة · `verify_deploy` 45 ok · 0 wa
 | حارس النطاق | `tools/check_deploy_scope.py` — يمنع لمس ملف خارج `blog/` |
 | فحص الميزانيات | `tools/check_budgets.py` — brotli، يفشل عند التجاوز |
 | فحص الفهرسة | `tools/check_indexing.py` — خرائط اللغتين وRSS وIndexNow وغياب تحويل `/en/` |
+| نطاق الخرائط | `tools/normalize_sitemaps.py` — ينقل خرائط Hugo إلى جذر `/blog/` قبل الفحص |
 | إخطار IndexNow | `tools/indexnow.py` — الجرد الحالي + المحذوفات + علامة تؤكد وصول Hostinger |
 | الخطوط | `tools/build_fonts.py` — استضافة ذاتية، وزنان ثابتان |
 | القوالب | `layouts/` — هيدر وفوتر ومقال وقائمة و404، ملف CSS واحد للاتجاهين |
@@ -241,7 +242,9 @@ mirror» غير متاحة في نموذجَي الهجرة. الحل: سير ع
 
 **[T7] خرائط الموقع وRSS وIndexNow**
 
-- أبقينا خرائط Hugo الأصلية: فهرس جامع + خريطة لكل لغة مع `hreflang` متبادل.
+- فهرس جامع + خريطة لكل لغة مع `hreflang` متبادل؛ تُنقل خريطتا اللغة إلى
+  `/blog/sitemap-en.xml` و`/blog/sitemap-ar.xml` كي لا تصفا روابط أعلى من
+  مجلد ملف الخريطة.
 - RSS مستقل ومترجم لكل لغة مع autodiscovery في `<head>`.
 - مفتاح IndexNow عام داخل `/blog/`، وجرد آلي للروابط الحالية والمحذوفة.
 - علامة نشر فريدة تمنع الإخطار قبل وصول مزامنة Hostinger الفعلية.
@@ -406,6 +409,8 @@ python3 tools/check_content.py content     # تدقيق الناتج
 python3 tools/check_cms.py                 # عقد اللوحة والنسخة المحلية
 python3 tools/check_controls.py            # بصمة الضوابط
 python3 tools/check_controls.py --update   # بعد تعديل ضابط مشروع
+hugo --gc --minify --destination public    # بناء
+python3 tools/normalize_sitemaps.py public  # تصحيح نطاق خرائط اللغات
 python3 tools/check_budgets.py public      # الميزانيات
 python3 tools/check_indexing.py public     # الخرائط وRSS ومفتاح IndexNow
 python3 tools/check_seo.py public          # metadata/hreflang/schema والخادم
@@ -414,7 +419,6 @@ python3 tools/indexnow.py collect site --output /tmp/indexnow.json \
   --deployment-id local-check             # الجرد الحالي + المحذوفات + علامة النشر
 python3 tools/indexnow.py submit /tmp/indexnow.json --dry-run
 python3 tools/build_fonts.py               # الخطوط
-hugo --gc --minify --destination public    # بناء
 python3 tools/backup_local.py /path/to/existing/backup-disk
 
 # الموقع (zero2one-web)
