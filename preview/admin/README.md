@@ -6,11 +6,11 @@
 
 ## ما يحتاجه المالك قبل النشر
 
-1. ينشر وسيط Sveltia Authenticator ويأخذ عنوانه الحقيقي.
-2. يبدّل قيمة `oauth_base_url` الوحيدة في `settings.json` من
-   `OWNER_MUST_SET_OAUTH_BASE_URL` إلى عنوان HTTPS الحقيقي. لا يوضع أي سر هنا؛
-   إعداد Sveltia ملف عام بطبيعته.
-3. يشغّل:
+تم إنشاء GitHub OAuth App ونشر وسيط Sveltia Authenticator وربطه على:
+`https://sveltia-cms-auth.01team9639.workers.dev`. لا توجد أسرار OAuth في هذا
+المستودع؛ إعداد Sveltia ملف عام بطبيعته، والسر مشفّر داخل Cloudflare فقط.
+
+1. بعد أي تعديل لإعداد اللوحة يشغّل:
 
    ```bash
    python3 tools/generate_cms.py
@@ -18,13 +18,13 @@
    python3 tools/check_controls.py --update
    ```
 
-4. يضبط أسرار `PREVIEW_FTP_HOST` و`PREVIEW_FTP_USER` و`PREVIEW_FTP_PASSWORD`
+2. يضبط أسرار `PREVIEW_FTP_HOST` و`PREVIEW_FTP_USER` و`PREVIEW_FTP_PASSWORD`
    و`PREVIEW_FTP_DIR` في `blog-build`، ثم يشغّل workflow `preview` يدويًا.
-5. يتحقق أن الدخول بلا كلمة مرور الاستضافة يرجع `401`، ثم يختبر GitHub OAuth
+3. يتحقق أن الدخول بلا كلمة مرور الاستضافة يرجع `401`، ثم يختبر GitHub OAuth
    وإنشاء مسودة باللغتين قبل تسليم الرابط للكاتب.
 
-لا يمكن تسجيل الدخول عن بعد والقيمة ما زالت `OWNER_MUST_SET_OAUTH_BASE_URL`.
-هذا مقصود: لم يُنشأ Worker أو تطبيق GitHub OAuth، ولم يُخمن أي عنوان لهما.
+اختُبر مسار `/auth` خارجيًا: يحوّل `preview.zero2one.sa` إلى GitHub ويرفض
+النطاق غير المدرج. يبقى اختبار دورة الدخول والحفظ كاملة بعد أول نشر للمعاينة.
 
 ## بنية المحتوى
 

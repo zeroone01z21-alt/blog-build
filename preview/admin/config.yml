@@ -5,7 +5,7 @@ backend:
   name: "github"
   repo: "zeroone01z21-alt/blog-content"
   branch: "main"
-  base_url: "OWNER_MUST_SET_OAUTH_BASE_URL"
+  base_url: "https://sveltia-cms-auth.01team9639.workers.dev"
   auth_methods:
     - "oauth"
 app_title: "كتابة مدونة ZERO 2 ONE"
