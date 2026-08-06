@@ -1,18 +1,52 @@
 {{ define "main" }}
 <div class="blog-index">
-  <h1>{{ .Title }}</h1>
-  {{- with .Content }}<div class="blog-intro">{{ . }}</div>{{ end }}
-  {{- partial "category-nav.html" . }}
+  <section class="blog-hero" aria-labelledby="blog-title">
+    <div class="blog-hero-copy">
+      <p class="eyebrow">{{ T "blogEyebrow" }}</p>
+      <h1 id="blog-title">
+        {{- if eq .Lang "ar" -}}
+          <span>{{ T "blog" }}</span>{{ print " " }}<span class="blog-title-brand" dir="ltr">ZERO 2 ONE</span>
+        {{- else -}}
+          <span class="blog-title-brand">ZERO 2 ONE</span>{{ print " " }}<span>{{ T "blog" }}</span>
+        {{- end -}}
+      </h1>
+      {{- with .Description }}<p class="blog-intro">{{ replace . "ZERO 2 ONE" "ZERO\u00a02\u00a0ONE" }}</p>{{ end }}
+    </div>
+    <div class="blog-hero-visual" aria-hidden="true" dir="ltr">
+      <span>0</span><i></i><span>1</span>
+    </div>
+  </section>
+
+  <div class="blog-stream">
   {{- $posts := where .Site.RegularPages "Type" "page" }}
   {{- $posts = where $posts "Params.archived" "ne" true }}
   {{- if $posts }}
-  <ul class="cards">
-    {{- range $posts.ByDate.Reverse }}
-    {{- partial "post-card.html" . }}
-    {{- end }}
-  </ul>
+    {{- partial "category-nav.html" . }}
+    <div class="blog-section-head">
+      <p class="eyebrow">{{ T "latestArticles" }}</p>
+    </div>
+    <ul class="cards">
+      {{- range $posts.ByDate.Reverse }}
+      {{- partial "post-card.html" . }}
+      {{- end }}
+    </ul>
   {{- else }}
-  <p class="empty">{{ T "noPosts" }}</p>
+    <section class="empty-state" aria-labelledby="empty-title">
+      <div class="empty-state-visual" aria-hidden="true">
+        <span class="empty-orbit"><i></i></span>
+        <span class="empty-number" dir="ltr">0 → 1</span>
+      </div>
+      <div class="empty-state-copy">
+        <p class="eyebrow">{{ T "emptyEyebrow" }}</p>
+        <h2 id="empty-title">{{ T "emptyTitle" }}</h2>
+        <p>{{ T "emptyBody" }}</p>
+        <div class="empty-actions">
+          <a class="button button-primary" href="{{ cond (eq .Lang "ar") "/ar" "" }}/services/">{{ T "exploreServices" }}</a>
+          <a class="button button-secondary" href="{{ cond (eq .Lang "ar") "/ar" "" }}/contact/">{{ T "startConversation" }}</a>
+        </div>
+      </div>
+    </section>
   {{- end }}
+  </div>
 </div>
 {{ end }}

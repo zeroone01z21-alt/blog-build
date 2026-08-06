@@ -81,3 +81,42 @@ other = "All rights reserved."
 
 [socials]
 other = "Socials"
+
+[testimonials]
+other = "Testimonials"
+
+[mainNavigation]
+other = "Main navigation"
+
+[menu]
+other = "Menu"
+
+[openMenu]
+other = "Navigation menu"
+
+[blogEyebrow]
+other = "Ideas. Strategy. Growth."
+
+[latestArticles]
+other = "Latest articles"
+
+[emptyEyebrow]
+other = "The next chapter"
+
+[emptyTitle]
+other = "Fresh thinking is on the way."
+
+[emptyBody]
+other = "Our first articles are being prepared. Until then, explore how ZERO 2 ONE can help move your brand forward."
+
+[exploreServices]
+other = "Explore our services"
+
+[startConversation]
+other = "Start a project"
+
+[visitUs]
+other = "Visit us"
+
+[talkToUs]
+other = "Talk to us"
