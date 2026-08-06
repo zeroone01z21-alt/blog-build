@@ -3,6 +3,6 @@
   <p class="code">404</p>
   <h1>{{ T "notFound" }}</h1>
   <p>{{ T "notFoundMsg" }}</p>
-  <p><a class="bfoot-cta" href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "allPosts" }}</a></p>
+  <p><a class="button button-primary" href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "allPosts" }}</a></p>
 </div>
 {{ end }}

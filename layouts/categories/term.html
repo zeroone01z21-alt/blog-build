@@ -1,8 +1,10 @@
 {{ define "main" }}
 <div class="blog-index category-archive">
-  <p class="eyebrow">{{ T "category" }}</p>
-  <h1>{{ .Title }}</h1>
-  {{- with .Params.intro }}<p class="blog-intro category-intro">{{ . }}</p>{{ end }}
+  <header class="archive-head">
+    <p class="eyebrow">{{ T "category" }}</p>
+    <h1>{{ .Title }}</h1>
+    {{- with .Params.intro }}<p class="blog-intro category-intro">{{ . }}</p>{{ end }}
+  </header>
   {{- $posts := where .Pages "Params.archived" "ne" true }}
   {{- if $posts }}
   <ul class="cards">
