@@ -1,9 +1,40 @@
+{{- /*
+  هيكل الصفحة — يستخدم تنقّل الموقع وفوتره **حرفيًّا**.
+
+  قرار المالك (2026-08-06، مكرَّرًا ثلاثًا): «الناف بار والسايد والبرغر
+  والفوتر نفسها في كل صفحة بالموقع بدون أي تعديل أبدًا».
+
+  فالكتل في layouts/partials/site/ مستخرجة نصًّا من صفحة داخلية حقيقية
+  (`work/index.html` و`ar/work/index.html`) ولا تُحرَّر يدويًّا. تُحدَّث
+  بإعادة تشغيل tools/sync_site_chrome.py حين يتغيّر الموقع.
+
+  الكلفة، موثَّقة صراحةً: هذا يحمّل bundle.min.css و vendor.min.js
+  و index-new.min.js — أي محرّك GSAP و locomotive و barba كاملًا. المسار
+  الحرج يتجاوز 220 KB. الميزانية أُعيد ضبطها في controls/budgets.json
+  بقرار المالك، لا بتجاوزٍ صامت من البناء.
+
+  لماذا يبقى هذا صحيحًا رغم الكلفة: هوية واحدة عبر النطاق كله تساوي أكثر
+  من كيلوبايتات في نظر زائر ينتقل بين الموقع والمدونة في الجلسة نفسها.
+*/ -}}
+{{- $ar := eq .Lang "ar" -}}
+{{- $chrome := cond $ar "ar" "en" -}}
 <!DOCTYPE html>
-<html lang="{{ .Lang }}" dir="{{ if eq .Lang "ar" }}rtl{{ else }}ltr{{ end }}">
-<head>{{ partial "head.html" . }}</head>
-<body>
-  {{ partial "header.html" . }}
-  <main id="main">{{ block "main" . }}{{ end }}</main>
-  {{ partial "footer.html" . }}
+<html lang="{{ .Lang }}" dir="{{ cond $ar "rtl" "ltr" }}">
+<head>
+  {{ partial "head.html" . }}
+</head>
+<body{{ if $ar }} class="lang-ar"{{ end }} data-barba="wrapper">
+  {{- /* البرغر والقائمة الجانبية والسوشيال — كتلة الموقع كما هي */ -}}
+  {{ partial (printf "site/nav-%s.html" $chrome) . }}
+
+  <main id="main" data-barba="container" data-barba-namespace="blog">
+    {{ block "main" . }}{{ end }}
+  </main>
+
+  {{- /* فوتر الموقع كما هو */ -}}
+  {{ partial (printf "site/footer-%s.html" $chrome) . }}
+
+  {{- /* نفس سكربتات الموقع وبنفس بصمات ?v= — بلا تعديل */ -}}
+  {{ partial "site-scripts.html" . }}
 </body>
 </html>

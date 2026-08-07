@@ -90,7 +90,12 @@
      الإنتاج حرفيًّا، وينكشف كصفحة بلا تنسيق بعد النشر. */}}
 <link rel="preload" as="font" type="font/woff2" crossorigin
       href="{{ (printf "fonts/%s.woff2" (cond (eq .Lang "ar") "cairo-arabic-400" "nm-400")) | relURL }}">
+{{- /* CSS الموقع أولًا: التنقّل والبرغر والقائمة الجانبية والفوتر تعتمد
+       عليه بالكامل. بنفس بصمة ?v= المستخدمة على الموقع، فالمتصفح يصيب
+       ذاكرته ولا يُنزّله ثانيةً عند الانتقال بين الموقع والمدونة. */ -}}
+{{ partial "site-css.html" . }}
 <link rel="stylesheet" href="{{ "fonts/fonts.css" | relURL }}">
+{{- /* CSS المدونة بعده: يخصّ تنسيق المقال وحده ولا يمسّ هيكل الموقع */ -}}
 <link rel="stylesheet" href="{{ "css/blog.css" | relURL }}">
 
 {{/* بيانات منظّمة: Article + BreadcrumbList، مربوطة بكيان المنظمة على الموقع */}}

@@ -88,6 +88,15 @@ def main():
 
     fonts_ar, fonts_en = font_bytes("cairo"), font_bytes("nm-")
 
+    # أصول الموقع تُطلب من نطاقه لا من public/ — بلا ضمّها هنا تمرّ
+    # البوابة وهي عمياء، وهو أسوأ من غيابها.
+    ext = json.load(open(os.path.join(ROOT, "controls", "budgets.json"),
+                         encoding="utf-8")).get("external_assets", {})
+    css_total += ext.get("css_bytes", 0)
+    if ext:
+        print(f'  (يشمل {ext.get("css_bytes",0)/1024:.1f} KB من CSS الموقع '
+              f'و {ext.get("deferred_js_bytes",0)/1024:.1f} KB جافاسكربت مؤجّل)\n')
+
     # 1) CSS
     cap = caps["css_total"]["max_bytes"]
     mark = "✅" if css_total <= cap else "❌"

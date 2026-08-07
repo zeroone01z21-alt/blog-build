@@ -17,19 +17,22 @@
     "",
     "تعديل هذا الملف يتطلب تحديث controls/fingerprints.txt في نفس العملية."
   ],
-
   "version": 1,
   "measurement": {
     "text_assets": "brotli",
     "binary_assets": "raw",
     "note_ar": "القياس على مخرجات البناء النهائية، لا على المصادر"
   },
-
   "budgets": [
     {
       "id": "critical_path",
       "label_ar": "المسار الحرج",
-      "includes": ["html", "css", "fonts", "lcp_image"],
+      "includes": [
+        "html",
+        "css",
+        "fonts",
+        "lcp_image"
+      ],
       "max_bytes": 225280,
       "max_label": "220 KB",
       "on_exceed": "fail",
@@ -38,7 +41,9 @@
     {
       "id": "fonts_total",
       "label_ar": "الخطوط مجتمعة",
-      "includes": ["fonts"],
+      "includes": [
+        "fonts"
+      ],
       "max_bytes": 112640,
       "max_label": "110 KB",
       "on_exceed": "fail",
@@ -47,7 +52,9 @@
     {
       "id": "single_image",
       "label_ar": "أي صورة مفردة",
-      "includes": ["image"],
+      "includes": [
+        "image"
+      ],
       "max_bytes": 512000,
       "max_label": "500 KB",
       "on_exceed": "fail",
@@ -56,23 +63,27 @@
     {
       "id": "css_total",
       "label_ar": "CSS",
-      "includes": ["css"],
-      "max_bytes": 20480,
-      "max_label": "20 KB",
+      "includes": [
+        "css"
+      ],
+      "max_bytes": 26624,
+      "max_label": "26 KB",
       "on_exceed": "fail",
-      "error_ar": "CSS تجاوز 20 كيلوبايت مضغوطاً ({actual})."
+      "error_ar": "CSS تجاوز 20 كيلوبايت مضغوطاً ({actual}).",
+      "$owner_decision": "رُفع من 20 إلى 26 كيلوبايت بقرار المالك في 2026-08-06، لا بتجاوز صامت من البناء. السبب: bundle.min.css الخاص بالموقع (18.3 KB مضغوط) صار يُحمَّل في المدونة لأن التنقّل والبرغر والقائمة الجانبية والفوتر تعتمد عليه بالكامل. المقابل: هوية واحدة عبر النطاق. لا يُرفع هذا الحد ثانيةً بلا قرار مكتوب."
     },
     {
       "id": "page_total",
       "label_ar": "الوزن الكلي شاملاً المؤجَّل",
-      "includes": ["all"],
+      "includes": [
+        "all"
+      ],
       "max_bytes": 307200,
       "max_label": "300 KB",
       "on_exceed": "warn",
       "error_ar": "الوزن الكلي {actual} تجاوز 300 كيلوبايت. تنبيه فقط — البناء يكمل."
     }
   ],
-
   "$learned": {
     "$comment": "أخطاء مثبتة على الموقع الرئيسي — لا تُكرَّر في المدونة",
     "critical_css_inlining": {
@@ -83,5 +94,20 @@
       "verdict": "مرفوض",
       "evidence": "تحريك top/height يسبب CLS. استُبدل بـ transform/yPercent على الموقع فهبط CLS من 0.615 إلى 0.047."
     }
+  },
+  "external_assets": {
+    "$comment": [
+      "أصول الموقع التي تحمّلها المدونة من zero2one.sa بقرار المالك",
+      "(2026-08-06): «الناف بار والسايد والبرغر والفوتر نفسها بلا أي تعديل».",
+      "",
+      "تُسجَّل هنا لأن check_budgets يقيس مجلد public/ وحده، وهذه الملفات",
+      "تُطلب من نطاق الموقع — فلولا تسجيلها لبقيت البوابة تمرّ وهي عمياء،",
+      "وهو أسوأ من غياب البوابة: يوهم بحماية غير موجودة.",
+      "",
+      "تُحدَّث بإعادة تشغيل tools/sync_site_chrome.py ثم قياس الملفات."
+    ],
+    "css_bytes": 18739,
+    "deferred_js_bytes": 59699,
+    "measured": "2026-08-06 · brotli q11"
   }
 }
