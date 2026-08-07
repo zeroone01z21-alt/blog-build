@@ -10,6 +10,21 @@
     </div>
 
     <div class="bfoot-grid">
+      {{- /* روابط الوصول السريع: تعيد الزائر إلى الموقع من أي مقال.
+             زائر المدونة يصل غالبًا من بحث خارجي إلى صفحة عميقة، فبلا هذه
+             الروابط يقرأ ويغادر بلا أن يعرف ماذا نبيع. */ -}}
+      <nav class="bfoot-links" aria-label="{{ T "quickLinks" }}">
+        <p class="bfoot-h">{{ T "quickLinks" }}</p>
+        <ul>
+          <li><a href="{{ cond $ar "/ar/" "/" }}">{{ T "home" }}</a></li>
+          <li><a href="{{ cond $ar "/ar" "" }}/about/">{{ T "about" }}</a></li>
+          <li><a href="{{ cond $ar "/ar" "" }}/services/">{{ T "services" }}</a></li>
+          <li><a href="{{ cond $ar "/ar" "" }}/work/">{{ T "work" }}</a></li>
+          <li><a href="{{ cond $ar "/blog/ar/" "/blog/" }}">{{ T "blog" }}</a></li>
+          <li><a href="{{ cond $ar "/ar" "" }}/contact/">{{ T "contact" }}</a></li>
+        </ul>
+      </nav>
+
       <address>
         <p class="bfoot-h">{{ T "visitUs" }}</p>
         {{ if $ar }}الدور السابع، مجمع الكمبيوترات، العليا، الرياض{{ else }}7th Floor, Computer Complex, Al Olaya, Riyadh{{ end }}

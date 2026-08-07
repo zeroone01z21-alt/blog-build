@@ -32,9 +32,18 @@
 
 <title>{{ $documentTitle }}</title>
 <meta name="description" content="{{ $desc | plainify | truncate 160 "" }}">
+{{- /*
+  لغة بلا مقالات: صفحة قائمة فارغة تُفهرَس كصفحة رقيقة وتُضعف تقييم النطاق.
+  نمنع فهرستها ما دامت فارغة، ويرفع المنع نفسه تلقائيًّا فور نشر أول مقال —
+  فلا يبقى `noindex` منسيًّا على صفحة صارت ذات قيمة.
+  `follow` لا `nofollow`: الروابط منها إلى الخدمات وصفحة التواصل تبقى نافذة.
+*/ -}}
+{{- $emptySection := and (or .IsHome (eq .Kind "section") (eq .Kind "term")) (eq (len .RegularPagesRecursive) 0) -}}
 {{- if $isPreview }}
 <meta name="robots" content="noindex, nofollow, noarchive">
 {{- else if $is404 }}
+<meta name="robots" content="noindex, follow">
+{{- else if $emptySection }}
 <meta name="robots" content="noindex, follow">
 {{- end }}
 <link rel="canonical" href="{{ .Permalink }}">

@@ -68,5 +68,5 @@ disableDefaultSiteRedirect = true
   organization = 'ZERO 2 ONE'
   organizationId = 'https://zero2one.sa/#organization'
   logo = 'https://zero2one.sa/assets/icons/logo-z2o.svg'
-  defaultImage = 'https://zero2one.sa/assets/images/og-cover.jpg'
-  defaultImageAr = 'https://zero2one.sa/assets/images/og-cover-ar.jpg'
+  defaultImage = 'https://zero2one.sa/assets/images/about-us-zero2one.webp'
+  defaultImageAr = 'https://zero2one.sa/assets/images/about-us-zero2one.webp'

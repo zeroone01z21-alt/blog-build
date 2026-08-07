@@ -11,7 +11,10 @@
   --muted: color-mix(in srgb, var(--ink) 62%, #fff);
   --line: color-mix(in srgb, var(--ink) 17%, transparent);
   --outer: 100rem;
-  --measure: 38rem;
+  /* عرض القراءة يكبر مع الشاشة بدل أن يثبت عند 38rem.
+     على لابتوب 1440px كان يترك ثلثي العرض فارغًا فتبدو الصفحة
+     غير متجاوبة. clamp يحفظ راحة القراءة ويملأ الشاشة. */
+  --measure: clamp(34rem, 4rem + 34vw, 52rem);
   --page-pad: clamp(1.5rem, 6vw, 7.5rem);
   --header-pad: clamp(1.25rem, 3vw, 3rem);
   --radius: 1.5rem;
@@ -871,3 +874,10 @@ html[dir="rtl"] .bfoot-h { letter-spacing: 0; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* روابط الوصول السريع في الفوتر — تعيد قارئ المقال إلى الموقع */
+.bfoot-links ul { list-style: none; margin: 0; padding: 0; }
+.bfoot-links li + li { margin-block-start: .4rem; }
+.bfoot-links a { text-decoration: none; }
+.bfoot-links a:hover,
+.bfoot-links a:focus-visible { text-decoration: underline; }
