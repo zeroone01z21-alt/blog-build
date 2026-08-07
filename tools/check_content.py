@@ -140,6 +140,20 @@ def check_file(path, schema, problems):
             if pat and not re.match(pat, str(val)):
                 bad(rule.get("error_ar") or f"«{name}» لا يطابق الصيغة المطلوبة.")
 
+        elif rule["type"] == "date":
+            # Hugo يرفض تاريخًا بلا ثوانٍ أو منطقة زمنية ويُسقط البناء كله
+            # برسالة إنجليزية لا يفهمها الكاتب. أُمسكها هنا برسالة بلغته.
+            raw = str(val).strip().strip('"\'')
+            try:
+                import datetime as _dt
+                _dt.datetime.fromisoformat(raw)
+                if len(raw) < 19 or ("+" not in raw and "Z" not in raw[10:]):
+                    raise ValueError
+            except Exception:
+                bad(f"التاريخ «{raw}» بصيغة لا يقبلها النظام. "
+                    "الصيغة الصحيحة مثل 2026-08-07T20:22:00+03:00 — "
+                    "أعد اختياره من التقويم في اللوحة.")
+
         elif rule["type"] == "list":
             if len(val) < rule.get("min_items", 0):
                 bad(rule.get("error_ar") or f"«{name}» يحتاج عنصرًا واحدًا على الأقل.")

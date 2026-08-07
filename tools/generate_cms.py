@@ -162,11 +162,23 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
     fields.append(slug)
 
     date = common_field("date", rules["date"], i18n="duplicate")
-    date.update({"widget": "datetime", "default": "{{now}}"})
+    date.update(**{**{"widget": "datetime",
+         # بلا صيغة صريحة تكتب اللوحة "2026-08-07T20:22" فيرفضها Hugo
+         # ويسقط البناء كله برسالة إنجليزية لا يفهمها الكاتب.
+         # حدث فعليًّا في 2026-08-07 وأوقف النشر.
+         "format": "YYYY-MM-DDTHH:mm:ssZZ",
+         "date_format": "YYYY-MM-DD", "time_format": "HH:mm",
+         "picker_utc": False}, "default": "{{now}}"})
     fields.append(date)
 
     lastmod = common_field("lastmod", rules["lastmod"], i18n="duplicate")
-    lastmod["widget"] = "datetime"
+    lastmod.update(**{"widget": "datetime",
+         # بلا صيغة صريحة تكتب اللوحة "2026-08-07T20:22" فيرفضها Hugo
+         # ويسقط البناء كله برسالة إنجليزية لا يفهمها الكاتب.
+         # حدث فعليًّا في 2026-08-07 وأوقف النشر.
+         "format": "YYYY-MM-DDTHH:mm:ssZZ",
+         "date_format": "YYYY-MM-DD", "time_format": "HH:mm",
+         "picker_utc": False})
     fields.append(lastmod)
 
     draft = common_field("draft", rules["draft"], i18n="duplicate")
