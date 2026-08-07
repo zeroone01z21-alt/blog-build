@@ -61,6 +61,7 @@ class DocumentParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.page = page
         self._title: list[str] | None = None
+        self._in_svg = 0
         self._heading_level: int | None = None
         self._heading: list[str] = []
         self._jsonld: list[str] | None = None
@@ -70,9 +71,13 @@ class DocumentParser(HTMLParser):
     ) -> None:
         tag = tag.lower()
         values = attr_map(attrs)
+        if tag == "svg":
+            self._in_svg += 1
         if tag == "html" and not self.page.html:
             self.page.html = values
-        elif tag == "title":
+        elif tag == "title" and not self._in_svg:
+            # <title> داخل <svg> اسم للأيقونة تقرؤه قارئات الشاشة، لا عنوان
+            # صفحة. عدّه خطأً يجعل البوابة تصرخ على ممارسة صحيحة، فتُتجاهَل.
             self._title = []
         elif tag == "meta":
             self.page.metas.append(values)
@@ -87,6 +92,8 @@ class DocumentParser(HTMLParser):
             self._jsonld = []
 
     def handle_endtag(self, tag: str) -> None:
+        if tag == "svg" and self._in_svg:
+            self._in_svg -= 1
         tag = tag.lower()
         if tag == "title" and self._title is not None:
             self.page.titles.append(clean_text("".join(self._title)))
@@ -265,9 +272,9 @@ def validate_page(page: Page, check: Check) -> None:
     for index, image in enumerate(page.images, start=1):
         check.require(page, "alt" in image,
                       f"الصورة #{index} بلا خاصية alt: {image.get('src', '')}")
-        if "alt" in image:
-            check.require(page, bool(clean_text(image["alt"])),
-                          f"الصورة #{index} لها alt فارغ: {image.get('src', '')}")
+        # alt="" هو **الصواب** لصورة زخرفية: يخبر قارئ الشاشة أن يتجاهلها.
+        # الخطأ الحقيقي هو غياب الخاصية أصلًا، وهو مفحوص أعلاه. اشتراط نص
+        # غير فارغ يدفع إلى وصف زخارف لا معنى لها ويضرّ من نحاول خدمتهم.
 
     # عناصر المشاركة إلزامية كذلك؛ فشلها لا يظهر في الصفحة لكنه يكسر واتساب/X.
     social = {
