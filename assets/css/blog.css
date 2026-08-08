@@ -111,74 +111,11 @@ html[dir="rtl"] .blog-title-brand { text-align: right; }
   line-height: 1.55;
 }
 
-.blog-hero-visual {
-  position: relative;
-  min-height: clamp(18rem, 29vw, 28rem);
-  padding: clamp(1.5rem, 3vw, 3.5rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1.1rem, 2.5vw, 2.75rem);
-  overflow: hidden;
-  border-radius: clamp(1.5rem, 2.5vw, 2rem);
-  background: var(--ink);
-  color: var(--cream);
-  isolation: isolate;
-}
 
-.blog-hero-visual::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset-block-start: -20%;
-  inset-inline-end: -10%;
-  width: 66%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--orange);
-}
 
-.blog-hero-visual::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: 16% 10%;
-  border: 1px solid rgb(255 253 237 / 24%);
-  border-radius: 50%;
-  transform: rotate(-17deg);
-}
 
-.blog-hero-visual span {
-  position: relative;
-  z-index: 1;
-  font-size: clamp(5.5rem, 10vw, 11rem);
-  font-weight: 700;
-  letter-spacing: -.08em;
-  line-height: 1;
-}
 
-.blog-hero-visual i {
-  position: relative;
-  z-index: 1;
-  width: clamp(3.5rem, 6vw, 7rem);
-  height: .18rem;
-  display: block;
-  background: var(--cream);
-  transform: rotate(-14deg);
-}
 
-.blog-hero-visual i::after {
-  content: '';
-  position: absolute;
-  inset-inline-end: -.1rem;
-  inset-block-start: 50%;
-  width: 1rem;
-  height: 1rem;
-  border-block-start: .18rem solid var(--cream);
-  border-inline-end: .18rem solid var(--cream);
-  transform: translateY(-50%) rotate(45deg);
-  transform-origin: center;
-}
 
 .blog-stream {
   padding: 0 var(--page-pad) clamp(4.5rem, 9vw, 9rem);

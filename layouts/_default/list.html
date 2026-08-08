@@ -3,17 +3,18 @@
   <section class="blog-hero" aria-labelledby="blog-title">
     <div class="blog-hero-copy">
       <p class="eyebrow">{{ T "blogEyebrow" }}</p>
+      {{- /* اسم العلامة من i18n لا مكتوبًا في القالب: الموقع يكتبه
+             «من الصفر إلى الواحد» في العربية، والمدونة تتبعه.
+             dir="ltr" للاتينية وحدها — النصّ العربي يرث اتجاه الصفحة. */ -}}
+      {{- $brand := T "brandName" -}}
       <h1 id="blog-title">
         {{- if eq .Lang "ar" -}}
-          <span>{{ T "blog" }}</span>{{ print " " }}<span class="blog-title-brand" dir="ltr">ZERO 2 ONE</span>
+          <span>{{ T "blog" }}</span>{{ print " " }}<span class="blog-title-brand">{{ $brand }}</span>
         {{- else -}}
-          <span class="blog-title-brand">ZERO 2 ONE</span>{{ print " " }}<span>{{ T "blog" }}</span>
+          <span class="blog-title-brand" dir="ltr">{{ $brand }}</span>{{ print " " }}<span>{{ T "blog" }}</span>
         {{- end -}}
       </h1>
       {{- with .Description }}<p class="blog-intro">{{ replace . "ZERO 2 ONE" "ZERO\u00a02\u00a0ONE" }}</p>{{ end }}
-    </div>
-    <div class="blog-hero-visual" aria-hidden="true" dir="ltr">
-      <span>0</span><i></i><span>1</span>
     </div>
   </section>
 

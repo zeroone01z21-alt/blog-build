@@ -3,7 +3,7 @@
 # إعداد الإنتاج للمدونة. إصدار Hugo نفسه مثبت مع بصمته في سير البناء.
 
 baseURL = 'https://zero2one.sa/blog/'
-title = 'مدونة ZERO 2 ONE'
+title = 'مدونة من الصفر إلى الواحد'
 enableRobotsTXT = false          # robots.txt يُدار من جذر النطاق (القسم 8.3)
 enableGitInfo = false
 timeZone = 'Asia/Riyadh'
@@ -43,7 +43,7 @@ disableDefaultSiteRedirect = true
     label = 'العربية'
     direction = 'rtl'
     weight = 2
-    title = 'مدونة ZERO 2 ONE'
+    title = 'مدونة من الصفر إلى الواحد'
 
 [permalinks]
   # القسم 8.1: بلا تاريخ وبلا تصنيف في المسار.
