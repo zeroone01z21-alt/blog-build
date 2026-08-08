@@ -48,7 +48,7 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "static", "fonts")
-CSS_OUT = os.path.join(ROOT, "static", "fonts", "fonts.css")
+CSS_OUT = os.path.join(ROOT, "assets", "fonts", "fonts.css")
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")

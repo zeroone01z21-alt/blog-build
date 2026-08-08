@@ -94,9 +94,27 @@
        عليه بالكامل. بنفس بصمة ?v= المستخدمة على الموقع، فالمتصفح يصيب
        ذاكرته ولا يُنزّله ثانيةً عند الانتقال بين الموقع والمدونة. */ -}}
 {{ partial "site-css.html" . }}
-<link rel="stylesheet" href="{{ "fonts/fonts.css" | relURL }}">
+{{- /*
+  ⚠️ لا تُعِد هذين إلى static/ ولا تحذف fingerprint.
+
+  ‏.htaccess الموقع يفرض على كل .css و .js:
+      Cache-Control: public, max-age=31536000, immutable
+  وهي سياسة صحيحة **بشرط** أن يتغيّر اسم الملف حين يتغيّر محتواه — وهذا
+  ما يفعله الموقع ببصمة ?v=. رابط ثابت مع immutable يعني أن المتصفح
+  والـCDN يحتفظان بالنسخة القديمة **سنةً كاملة**: ينجح النشر، ويبقى
+  الزائر العائد يرى التصميم القديم، ولا شيء في السجلّات يشير إلى خطأ.
+
+  fingerprint يضع تجزئة المحتوى في اسم الملف، فيصير الرابط جديدًا مع كل
+  تعديل حقيقي، ويبقى ثابتًا حين لا يتغيّر شيء فلا نُبطل ذاكرة بلا سبب.
+
+  وfonts.css يبقى في مجلد fonts/ بعد البصم، فمسارات url() النسبية إلى
+  ملفات woff2 في static/fonts تظل صحيحة.
+*/ -}}
+{{- $fonts := resources.Get "fonts/fonts.css" | minify | fingerprint "sha256" -}}
+{{- $blog  := resources.Get "css/blog.css"    | minify | fingerprint "sha256" -}}
+<link rel="stylesheet" href="{{ $fonts.RelPermalink }}">
 {{- /* CSS المدونة بعده: يخصّ تنسيق المقال وحده ولا يمسّ هيكل الموقع */ -}}
-<link rel="stylesheet" href="{{ "css/blog.css" | relURL }}">
+<link rel="stylesheet" href="{{ $blog.RelPermalink }}">
 
 {{/* بيانات منظّمة: Article + BreadcrumbList، مربوطة بكيان المنظمة على الموقع */}}
 {{- if $isPost }}
