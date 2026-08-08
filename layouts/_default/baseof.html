@@ -43,7 +43,14 @@
       المحتوى بقي ثابتًا بينما ينزلق الفوتر فوقه. هنا لا في كل تخطيط، فيسري
       على القوائم والمقالات والتصنيفات و404 وأي تخطيط يُضاف لاحقًا.
     */ -}}
-    <div data-scroll-section>
+    <div class="blog-body" data-scroll-section>
+      {{- /*
+        شريط التنقّل العلوي — الشعار وروابط الموقع. في صفحات الموقع يعيش
+        داخل `header.section.default-header` أي **داخل** main-wrap لا قبله،
+        ولهذا لم تلتقطه كتلة التنقّل. وهو `position:absolute; top:0` فيحتاج
+        أبًا موضَّعًا: `.blog-body` هو ذلك الأب (انظر blog.css).
+      */ -}}
+      {{ partial (printf "site/navbar-%s.html" $chrome) . }}
       {{ block "main" . }}{{ end }}
     </div>
 

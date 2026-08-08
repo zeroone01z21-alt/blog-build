@@ -53,17 +53,39 @@ SOURCES = [("en", "work/index.html"), ("ar", "ar/work/index.html")]
 
 
 def clean(block):
-    """يزيل ترويسة XML من الأيقونات المضمّنة.
+    """تنظيف كتلة مستخرَجة قبل كتابتها كـ partial.
 
-    `<?xml version="1.0"?>` بلا معنى داخل HTML — المتصفح يتجاهلها كتعليق
-    زائف. لكن مصغِّر Hugo يهرّبها إلى `&lt;?xml …` فتظهر **نصًّا مرئيًّا**
-    فوق كل سهم في الفوتر. تُحذف عند الاستخراج لا بعده.
+    ١) ترويسة XML من الأيقونات المضمّنة: `<?xml version="1.0"?>` بلا معنى
+       داخل HTML — المتصفح يتجاهلها كتعليق زائف. لكن مصغِّر Hugo يهرّبها
+       إلى `&lt;?xml …` فتظهر **نصًّا مرئيًّا** فوق كل سهم في الفوتر.
+
+    ٢) صور الهيكل تُجعل مطلقة كما CSS وJS تمامًا وللسبب نفسه: المعاينة
+       تعمل على نطاق فرعي، و`/assets/images/p1.webp` هناك يعطي 404 فتظهر
+       صورة مكسورة في الفوتر. الإنتاج على النطاق نفسه فلا فرق عنده.
     """
-    return re.sub(r"<\?xml[^>]*\?>\s*", "", block)
+    block = re.sub(r"<\?xml[^>]*\?>\s*", "", block)
+    return re.sub(r'((?:src|srcset)=")(/assets/)', rf"\1{ORIGIN}\2", block)
+
+
+def balanced_div(html, opener):
+    """الكتلة من `opener` حتى `</div>` التي توازنه — لا التي تسبقه.
+
+    تعبير نمطي غير جشع يتوقّف عند أول `</div>` فيقطع الكتلة في منتصفها.
+    شريط التنقّل يحوي عشرات الـdiv المتداخلة، فالعدّ هو الطريق الوحيد.
+    """
+    i = html.find(opener)
+    if i < 0:
+        raise SystemExit(f"  ❌ لم أجد {opener} — راجع الموقع قبل المزامنة")
+    depth = 0
+    for m in re.finditer(r"<div\b|</div>", html[i:]):
+        depth += 1 if m.group(0) == "<div" else -1
+        if depth == 0:
+            return html[i:i + m.end()]
+    raise SystemExit(f"  ❌ {opener} غير مغلق في الموقع")
 
 
 def extract(html):
-    """كتلتا الهيكل حول محتوى الصفحة، ووسوم الأصول.
+    """ثلاث كتل هيكل حول محتوى الصفحة، ووسوم الأصول.
 
     بنية صفحة الموقع:
 
@@ -96,6 +118,7 @@ def extract(html):
         raise SystemExit("  ❌ بنية الصفحة تغيّرت — راجع الموقع قبل المزامنة")
     return {
         "nav": clean(html[main.end():wrap.end()]),
+        "navbar": clean(balanced_div(html, '<div class="nav-bar">')),
         "footer": clean(html[frd:close]),
         "css": re.findall(r'<link[^>]*href="(/assets/css/[^"]+)"', html),
         "js": re.findall(r'<script[^>]*src="(/assets/js/[^"]+)"', html),
@@ -138,12 +161,12 @@ def main():
         # هنا يعني صفحةً كاملة بوسوم مفتوحة — عطبٌ صامت في كل مقال.
         def bal(s):
             return len(re.findall(r"<div\b", s)) - len(re.findall(r"</div>", s))
-        if bal(got["nav"]) + bal(got["footer"]) != 0:
-            print(f"  ❌ {lang}: الكتلتان غير متوازنتين "
-                  f"(تنقّل {bal(got['nav']):+d} · فوتر {bal(got['footer']):+d})")
+        if bal(got["nav"]) + bal(got["footer"]) != 0 or bal(got["navbar"]) != 0:
+            print(f"  ❌ {lang}: الكتل غير متوازنة (تنقّل {bal(got['nav']):+d} · "
+                  f"فوتر {bal(got['footer']):+d} · شريط {bal(got['navbar']):+d})")
             return 1
 
-        for kind in ("nav", "footer"):
+        for kind in ("nav", "navbar", "footer"):
             dest = os.path.join(OUT, f"{kind}-{lang}.html")
             new = got[kind] + "\n"
             old = open(dest, encoding="utf-8").read() if os.path.exists(dest) else None
@@ -153,7 +176,8 @@ def main():
                 else:
                     open(dest, "w", encoding="utf-8").write(new)
                     wrote += 1
-        print(f"  {lang}: تنقّل {len(got['nav']):,} · فوتر {len(got['footer']):,} حرف")
+        print(f"  {lang}: تنقّل {len(got['nav']):,} · شريط {len(got['navbar']):,} "
+              f"· فوتر {len(got['footer']):,} حرف")
 
     css_html, js_html = render_assets(css, js)
     for name, body in (("site-css.html", css_html), ("site-scripts.html", js_html)):

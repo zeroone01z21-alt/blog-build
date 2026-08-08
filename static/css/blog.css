@@ -21,20 +21,25 @@
   --ease: cubic-bezier(.7, 0, .3, 1);
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+/* ─────────────────────────────────────────────────────────────────────
+   قشرة الصفحة ليست لنا.
+   الهيكل — البرغر والقائمة الجانبية والفوتر — يأتي من الموقع، ويُنسَّق
+   بـ bundle.min.css المحمَّل قبل هذا الملف. فأي قاعدة هنا على html أو
+   body أو * تسبق ملف الموقع في الترتيب وتُعيد تنسيق هيكله: خطًّا آخر
+   في الفوتر، أو `body{display:flex}` يجعل `main{width:100vw}` يفيض
+   أفقيًّا فيظهر شريط فارغ على الجانب وينزاح كل شيء.
 
-html {
-  -webkit-text-size-adjust: 100%;
-  background: var(--cream);
-  scroll-behavior: smooth;
-}
+   لذلك كل ما يخصّ المدونة محصور تحت .blog-body. القاعدة: لا محدِّد في
+   هذا الملف يبدأ بعنصر عارٍ.
+   ───────────────────────────────────────────────────────────────────── */
+.blog-body *, .blog-body *::before, .blog-body *::after { box-sizing: border-box; }
 
-body {
-  min-height: 100vh;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--cream);
+.blog-body {
+  /* الأب الموضَّع لشريط التنقّل: الشريط `position:absolute; top:0` في CSS
+     الموقع، فبلا أبٍ موضَّع يقفز إلى أقرب واحد ويهبط في مكان خاطئ.
+     والحشو العلوي يفسح ارتفاعه (91px على 1440) فلا يركب على المحتوى. */
+  position: relative;
+  padding-top: clamp(6rem, 4rem + 3vw, 8.5rem);
   color: var(--ink);
   font-family: 'Dennis Sans', system-ui, -apple-system, sans-serif;
   font-size: clamp(1rem, 1.2vw, 1.1875rem);
@@ -43,192 +48,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-html[dir="rtl"] body { font-family: 'Cairo', system-ui, sans-serif; }
+html[dir="rtl"] .blog-body { font-family: 'Cairo', system-ui, sans-serif; }
 
-main { flex: 1 0 auto; }
-a { color: inherit; }
-img { max-width: 100%; height: auto; }
-::selection { background: var(--orange); color: var(--cream); }
-
-/* Header */
-.bhead {
-  position: relative;
-  z-index: 20;
-  padding: 1rem var(--header-pad);
-  background: var(--cream);
-}
-
-.bhead-inner {
-  width: 100%;
-  max-width: var(--outer);
-  min-height: 4.75rem;
-  margin-inline: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-}
-
-.bhead-brand {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-}
-
-.bhead-brand img {
-  display: block;
-  width: clamp(7rem, 9vw, 8.75rem);
-  height: auto;
-}
-
-.bhead-nav {
-  display: flex;
-  align-items: center;
-  gap: clamp(.75rem, 1.4vw, 1.55rem);
-  margin-inline-start: auto;
-}
-
-.bhead-nav a {
-  position: relative;
-  padding-block: .65rem;
-  color: var(--ink);
-  font-size: .95rem;
-  font-weight: 400;
-  line-height: 1.2;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.bhead-nav-desktop a:not(.bhead-contact)::after {
-  content: '';
-  position: absolute;
-  inset-inline-start: 50%;
-  inset-block-end: .12rem;
-  width: .28rem;
-  height: .28rem;
-  border-radius: 50%;
-  background: var(--orange);
-  opacity: 0;
-  transform: translateX(-50%) scale(0);
-  transition: opacity .25s ease, transform .25s var(--ease);
-}
-
-html[dir="rtl"] .bhead-nav-desktop a:not(.bhead-contact)::after {
-  transform: translateX(50%) scale(0);
-}
-
-.bhead-nav-desktop a:hover::after,
-.bhead-nav-desktop a:focus-visible::after,
-.bhead-nav-desktop a[aria-current]::after {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-}
-
-html[dir="rtl"] .bhead-nav-desktop a:hover::after,
-html[dir="rtl"] .bhead-nav-desktop a:focus-visible::after,
-html[dir="rtl"] .bhead-nav-desktop a[aria-current]::after {
-  transform: translateX(50%) scale(1);
-}
-
-.bhead-nav a[aria-current] { color: var(--orange-text); }
-
-.bhead-nav .bhead-contact {
-  padding-inline-start: 1rem;
-  background: transparent;
-  color: var(--ink);
-  transition: color .25s ease;
-}
-
-.bhead-nav .bhead-contact::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: 0;
-  inset-block-start: 50%;
-  width: .42rem;
-  height: .42rem;
-  border-radius: 50%;
-  background: var(--orange);
-  transform: translateY(-50%);
-}
-
-.bhead-lang {
-  padding-inline-start: clamp(.8rem, 1.3vw, 1.35rem) !important;
-  border-inline-start: 1px solid var(--line);
-}
-
-.bhead-lang[lang="ar"],
-.bhead-nav-mobile a[lang="ar"] { font-family: 'Cairo', system-ui, sans-serif; }
-.bhead-lang[lang="en"],
-.bhead-nav-mobile a[lang="en"] { font-family: 'Dennis Sans', system-ui, sans-serif; }
-
-.bhead-menu { display: none; position: relative; }
-
-.bhead-menu summary {
-  min-width: 6.4rem;
-  min-height: 3.6rem;
-  padding: .65rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: .7rem;
-  border-radius: 999px;
-  background: var(--ink);
-  color: var(--cream);
-  cursor: pointer;
-  font-size: .84rem;
-  font-weight: 700;
-  list-style: none;
-}
-
-.bhead-menu summary::-webkit-details-marker { display: none; }
-
-.bhead-menu-icon {
-  position: relative;
-  width: 1.1rem;
-  height: .75rem;
-  display: block;
-}
-
-.bhead-menu-icon i {
-  position: absolute;
-  inset-inline: 0;
-  height: 1px;
-  background: currentColor;
-  transition: transform .25s var(--ease), inset-block-start .25s var(--ease);
-}
-
-.bhead-menu-icon i:first-child { inset-block-start: .15rem; }
-.bhead-menu-icon i:last-child { inset-block-start: .58rem; }
-.bhead-menu[open] .bhead-menu-icon i:first-child { inset-block-start: .36rem; transform: rotate(45deg); }
-.bhead-menu[open] .bhead-menu-icon i:last-child { inset-block-start: .36rem; transform: rotate(-45deg); }
-
-.bhead-nav-mobile {
-  position: absolute;
-  inset-block-start: calc(100% + .75rem);
-  inset-inline-end: 0;
-  width: min(25rem, calc(100vw - 2.5rem));
-  padding: 1.1rem;
-  display: grid;
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--cream);
-  box-shadow: 0 1.25rem 3rem rgb(20 21 23 / 20%);
-}
-
-.bhead-nav-mobile a {
-  padding: .75rem .85rem;
-  color: var(--cream);
-  font-size: clamp(1.05rem, 4vw, 1.35rem);
-  font-weight: 400;
-  text-decoration: none;
-}
-
-.bhead-nav-mobile a + a { border-block-start: 1px solid rgb(255 253 237 / 14%); }
-.bhead-nav-mobile a:hover,
-.bhead-nav-mobile a:focus-visible,
-.bhead-nav-mobile a[aria-current] { color: var(--orange); }
-
+.blog-body a { color: inherit; }
+.blog-body img { max-width: 100%; height: auto; }
+.blog-body ::selection { background: var(--orange); color: var(--cream); }
 /* Blog index hero */
 .blog-index {
   width: 100%;
