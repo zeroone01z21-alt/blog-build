@@ -52,16 +52,51 @@ ORIGIN = "https://zero2one.sa"
 SOURCES = [("en", "work/index.html"), ("ar", "ar/work/index.html")]
 
 
+def clean(block):
+    """يزيل ترويسة XML من الأيقونات المضمّنة.
+
+    `<?xml version="1.0"?>` بلا معنى داخل HTML — المتصفح يتجاهلها كتعليق
+    زائف. لكن مصغِّر Hugo يهرّبها إلى `&lt;?xml …` فتظهر **نصًّا مرئيًّا**
+    فوق كل سهم في الفوتر. تُحذف عند الاستخراج لا بعده.
+    """
+    return re.sub(r"<\?xml[^>]*\?>\s*", "", block)
+
+
 def extract(html):
-    """كتلة التنقّل (من فتح main حتى أول header قسم) والفوتر ووسوم الأصول."""
+    """كتلتا الهيكل حول محتوى الصفحة، ووسوم الأصول.
+
+    بنية صفحة الموقع:
+
+        <main class="main inner-page">
+          … البرغر · القائمة الجانبية · السوشيال …
+          <div class="main-wrap" data-scroll-container>   ← تفتح هنا
+            … محتوى الصفحة …
+            <div class="footer-rounded-div">…</div>
+            <div class="footer-wrap … theme-dark">
+              <footer class="section footer">…</footer>
+              <div class="overlay overlay-gradient"></div>
+            </div>
+          </div>                                          ← وتُغلق هنا
+        </main>
+
+    لهذا لا يكفي أخذ `<footer>` وحده: قواعد الموقع مكتوبة على الأب —
+    `.footer-wrap.theme-dark .footer` و`.footer-wrap.theme-dark
+    .overlay-gradient`. فوتر بلا هذا الأب لا يصله أي تنسيق، ويظهر
+    كتلةً بيضاء لا تشبه الموقع. والغلاف `data-scroll-container` هو ما
+    يمسك locomotive؛ فتحُه بلا إغلاق يكسر التمرير في كل صفحة.
+
+    فالكتلتان تُقتطعان لتُغلّفا المحتوى معًا: `nav` ترصيدها +1 div،
+    و`footer` ترصيدها −1، فتتوازنان داخل `<main>` في baseof.html.
+    """
     main = re.search(r"<main[^>]*>", html)
-    hdr = re.search(r'<header class="section', html)
-    foot = re.search(r'<footer class="section footer".*?</footer>', html, re.S)
-    if not (main and hdr and foot):
+    wrap = re.search(r'<div class="main-wrap"[^>]*>', html)
+    frd = html.find('<div class="footer-rounded-div"')
+    close = html.find("</main>")
+    if not (main and wrap and frd > 0 and close > frd):
         raise SystemExit("  ❌ بنية الصفحة تغيّرت — راجع الموقع قبل المزامنة")
     return {
-        "nav": html[main.end():hdr.start()].strip(),
-        "footer": foot.group(0),
+        "nav": clean(html[main.end():wrap.end()]),
+        "footer": clean(html[frd:close]),
         "css": re.findall(r'<link[^>]*href="(/assets/css/[^"]+)"', html),
         "js": re.findall(r'<script[^>]*src="(/assets/js/[^"]+)"', html),
     }
@@ -98,6 +133,15 @@ def main():
             return 1
         got = extract(open(path, encoding="utf-8").read())
         css, js = got["css"], got["js"]
+
+        # الكتلتان تغلّفان المحتوى: ما تفتحه الأولى تغلقه الثانية. اختلال
+        # هنا يعني صفحةً كاملة بوسوم مفتوحة — عطبٌ صامت في كل مقال.
+        def bal(s):
+            return len(re.findall(r"<div\b", s)) - len(re.findall(r"</div>", s))
+        if bal(got["nav"]) + bal(got["footer"]) != 0:
+            print(f"  ❌ {lang}: الكتلتان غير متوازنتين "
+                  f"(تنقّل {bal(got['nav']):+d} · فوتر {bal(got['footer']):+d})")
+            return 1
 
         for kind in ("nav", "footer"):
             dest = os.path.join(OUT, f"{kind}-{lang}.html")

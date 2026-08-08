@@ -45,6 +45,8 @@ GUARDED_FILES = [
     "hugo.toml",                    # عقد الروابط واللغات والتصنيفات وGoldmark
     "layouts/_default/_markup/render-image.html",  # يمنع صور Markdown الخارجية
     "layouts/partials/head.html",   # metadata وhreflang وJSON-LD وnoindex
+    "layouts/_default/baseof.html",  # ترتيب هيكل الموقع حول المحتوى
+    "tools/sync_site_chrome.py",     # يستخرج الهيكل من الموقع حرفيًّا
     "preview/index.html",           # جذر المعاينة لا يدخل فهرس البحث
     "static/.htaccess",             # 404/301/410 الإنجليزية
     "static/ar/.htaccess",          # 404/410 العربية

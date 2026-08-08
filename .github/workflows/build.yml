@@ -106,6 +106,36 @@ jobs:
           cat "$report"
           exit "$exit_code"
 
+      # الموقع يُستنسخ **قبل** البناء لا بعده: هو مصدر الهيكل، لا وجهة النشر
+      # وحدها. الخطوة التالية تستخرج منه البرغر والقائمة الجانبية والفوتر،
+      # فتُبنى المدونة على هيكل الموقع كما هو **الآن**، لا كما كان يوم آخر
+      # مزامنة يدوية.
+      - name: مستودع الموقع
+        id: site_checkout
+        env:
+          TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::السر SITE_REPO_TOKEN غير مضبوط."
+            exit 1
+          fi
+          git clone --depth 1 \
+            "https://x-access-token:${TOKEN}@github.com/01team9639-maker/zero2one-web.git" site \
+            2>&1 | sed -E "s#//[^@]*@#//***@#g"
+
+      # جذر المشكلة التي طُلب حلّها: الموقع 22 ملف HTML يكرّر الفوتر نصًّا،
+      # ولا مكوّن واحد يولّده. فلا يمكن للمدونة أن «تشارك» ملفًا غير موجود.
+      # البديل الوحيد الصادق: الاستخراج الآلي في كل بناء. يتغيّر هاتف الفوتر
+      # أو رابط سوشيال في الموقع، فتتبعه المدونة في النشر التالي بلا لمسة يد.
+      # وإن تغيّرت بنية الصفحة فالاستخراج يفشل بصوت عالٍ لا يمرّ صامتًا.
+      - name: مزامنة هيكل الموقع إلى المدونة
+        id: chrome_sync
+        run: |
+          set -euo pipefail
+          python3 tools/sync_site_chrome.py site
+          git --no-pager diff --stat -- layouts/partials/site layouts/partials/site-css.html layouts/partials/site-scripts.html
+
       - name: تثبيت Hugo ببصمة الإصدار
         id: hugo_install
         run: |
@@ -143,20 +173,6 @@ jobs:
       - name: ميزانيات الأداء
         id: budgets
         run: python3 tools/check_budgets.py public
-
-      - name: مستودع الموقع
-        id: site_checkout
-        env:
-          TOKEN: ${{ secrets.SITE_REPO_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${TOKEN:-}" ]; then
-            echo "::error::السر SITE_REPO_TOKEN غير مضبوط."
-            exit 1
-          fi
-          git clone --depth 1 \
-            "https://x-access-token:${TOKEN}@github.com/01team9639-maker/zero2one-web.git" site \
-            2>&1 | sed -E "s#//[^@]*@#//***@#g"
 
       - name: استبدال blog/ وحده
         id: replace_blog

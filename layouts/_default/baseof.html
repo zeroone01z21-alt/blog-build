@@ -24,15 +24,32 @@
   {{ partial "head.html" . }}
 </head>
 <body{{ if $ar }} class="lang-ar"{{ end }} data-barba="wrapper">
-  {{- /* البرغر والقائمة الجانبية والسوشيال — كتلة الموقع كما هي */ -}}
-  {{ partial (printf "site/nav-%s.html" $chrome) . }}
+  {{- /*
+    ترتيب صفحات الموقع حرفيًّا: كل شيء داخل <main>، والمحتوى محصور بين
+    كتلتَي الهيكل. الأولى تفتح `main-wrap data-scroll-container` بعد
+    البرغر والقائمة الجانبية، والثانية تحمل الفوتر وتغلق الغلاف.
 
-  <main id="main" data-barba="container" data-barba-namespace="blog">
-    {{ block "main" . }}{{ end }}
+    ⚠️ لا تُخرج الفوتر من <main> ولا تفصله عن كتلته: قواعد الموقع مكتوبة
+    على الأب `.footer-wrap.theme-dark .footer`. فوتر بلا هذا الأب يخرج
+    بلا خلفية ولا تنسيق — وهو بالضبط ما جعل المدونة تبدو موقعًا آخر.
+  */ -}}
+  <main class="main inner-page" id="blog" data-barba="container" data-barba-namespace="blog">
+    {{- /* البرغر والقائمة الجانبية والسوشيال — كتلة الموقع كما هي */ -}}
+    {{ partial (printf "site/nav-%s.html" $chrome) . }}
+
+    {{- /*
+      `data-scroll-section` ليس زينة: locomotive يبحث عن هذه العلامة داخل
+      الغلاف، ويحرّك ما يحملها وحده. الفوتر يحملها (قسمان)، فلو لم يحملها
+      المحتوى بقي ثابتًا بينما ينزلق الفوتر فوقه. هنا لا في كل تخطيط، فيسري
+      على القوائم والمقالات والتصنيفات و404 وأي تخطيط يُضاف لاحقًا.
+    */ -}}
+    <div data-scroll-section>
+      {{ block "main" . }}{{ end }}
+    </div>
+
+    {{- /* فوتر الموقع بغلافه الكامل — يغلق main-wrap */ -}}
+    {{ partial (printf "site/footer-%s.html" $chrome) . }}
   </main>
-
-  {{- /* فوتر الموقع كما هو */ -}}
-  {{ partial (printf "site/footer-%s.html" $chrome) . }}
 
   {{- /* نفس سكربتات الموقع وبنفس بصمات ?v= — بلا تعديل */ -}}
   {{ partial "site-scripts.html" . }}
