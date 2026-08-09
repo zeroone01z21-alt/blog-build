@@ -211,20 +211,32 @@ jobs:
           git push -q origin main 2>&1 | sed -E "s#//[^@]*@#//***@#g"
           echo "✅ نُشر $(git rev-parse --short HEAD)"
 
+      # مزامنة Hostinger غير متزامنة ولا سقف معلوم لها. حدث فعليًّا أن
+      # تجاوزت 240 ثانية، فظهر التشغيل **أحمر بينما النشر نجح** — والدفع
+      # إلى مستودع الموقع تمّ قبل هذه الخطوة أصلًا.
+      #
+      # إشارة تكذب أسوأ من غياب الإشارة: من يرى أحمر على نشر ناجح مرّتين
+      # يتوقّف عن قراءة اللون. لذلك:
+      #   • النافذة 600 ثانية بدل 240 — تغطّي البطء المعتاد
+      #   • continue-on-error: تأخّر المزامنة تحذير لا فشل
+      # وIndexNow يبقى مشروطًا بنجاحها فلا يُخطَر محرك البحث بنسخة لم
+      # تظهر بعد. الخرائط تلتقط الروابط لاحقًا على أي حال.
       - name: تحقق خارجي من وصول النشر
         id: live_verify
-        timeout-minutes: 5
+        continue-on-error: true
+        timeout-minutes: 12
         run: |
           python3 tools/wait_for_live.py \
             site/blog/indexnow-deploy.txt \
             https://zero2one.sa/blog/indexnow-deploy.txt \
-            --seconds 240
+            --seconds 600
 
       # النشر عبر Hostinger غير متزامن. الأداة تنتظر علامة هذا البناء تحديداً
       # قبل الإخطار، حتى لا يزور محرك البحث النسخة السابقة. تعطل IndexNow لا
       # يحوّل نشرًا ناجحًا إلى فشل؛ يعاد اكتشاف الروابط من الخرائط لاحقًا.
       - name: إخطار IndexNow بعد ظهور النشر
         id: indexnow_submit
+        if: steps.live_verify.outcome == 'success'
         continue-on-error: true
         timeout-minutes: 8
         run: python3 tools/indexnow.py submit "$RUNNER_TEMP/indexnow.json"
@@ -321,6 +333,13 @@ jobs:
               printf '| seo | %s |\n' "${SEO_OUTCOME:-not-run}"
               printf '| push | %s |\n' "${PUSH_OUTCOME:-not-run}"
               printf '| live-verify | %s |\n' "${LIVE_OUTCOME:-not-run}"
+              # تأخّر المزامنة ليس فشل نشر. يُشرح هنا صراحةً وإلا قرأه الكاتب
+              # رمزًا غامضًا وظنّ أن مقاله لم يُنشر.
+              if [ "${LIVE_OUTCOME:-}" = "failure" ] && [ "${PUSH_OUTCOME:-}" = "success" ]; then
+                printf '\n> ⚠️ **النشر تمّ، لكن Hostinger لم تُظهره خلال 10 دقائق.**\n'
+                printf '> المحتوى في مستودع الموقع وسيظهر عند اكتمال المزامنة.\n'
+                printf '> أُجّل إخطار IndexNow — تلتقط محركات البحث الروابط من الخرائط.\n'
+              fi
               printf '\n[Open full run](%s/%s/actions/runs/%s)\n' \
                 "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
             } >> "$GITHUB_STEP_SUMMARY"
