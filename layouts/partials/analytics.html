@@ -1,0 +1,45 @@
+{{- /*
+  التحليلات — مؤجّلة، بنفس استراتيجية الموقع حرفيًّا.
+
+  dataLayer و gtag() موجودان فورًا فلا يضيع حدث مبكّر: الأحداث تُصَفّ
+  وتُعاد عند وصول السكربتات. أما السكربتات نفسها (GA4 و GTM وما يحقنه
+  GTM، ~460 كيلوبايت ومعظم شغل الخيط الرئيسي) فلا تُجلب إلا بعد أن تصير
+  الصفحة تفاعلية: عند الخمول بعد التحميل، أو عند أول تفاعل — أيّهما أسبق.
+
+  المعرّفات من hugo.toml لا مكتوبة هنا، فلا تفترق نسختان منها.
+*/ -}}
+{{- with .Site.Params.ga4Id }}
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', '{{ . }}');
+  {{- with $.Site.Params.gtmId }}
+  dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+  {{- end }}
+
+  (function () {
+     var EVENTS = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+     var loaded = false;
+     function load() {
+        if (loaded) return;
+        loaded = true;
+        EVENTS.forEach(function (e) { window.removeEventListener(e, load); });
+        ['https://www.googletagmanager.com/gtag/js?id={{ . }}'
+        {{- with $.Site.Params.gtmId }},
+         'https://www.googletagmanager.com/gtm.js?id={{ . }}'{{ end }}].forEach(function (src) {
+           var s = document.createElement('script');
+           s.async = true;
+           s.src = src;
+           document.head.appendChild(s);
+        });
+     }
+     EVENTS.forEach(function (e) { window.addEventListener(e, load, { passive: true, once: true }); });
+     function idle() {
+        (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(load, { timeout: 4000 });
+     }
+     if (document.readyState === 'complete') idle();
+     else window.addEventListener('load', idle);
+  })();
+</script>
+{{- end }}

@@ -115,6 +115,7 @@
 <link rel="stylesheet" href="{{ $fonts.RelPermalink }}">
 {{- /* CSS المدونة بعده: يخصّ تنسيق المقال وحده ولا يمسّ هيكل الموقع */ -}}
 <link rel="stylesheet" href="{{ $blog.RelPermalink }}">
+{{ partial "analytics.html" . }}
 
 {{/* بيانات منظّمة: Article + BreadcrumbList، مربوطة بكيان المنظمة على الموقع */}}
 {{- if $isPost }}

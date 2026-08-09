@@ -24,6 +24,11 @@
   {{ partial "head.html" . }}
 </head>
 <body{{ if $ar }} class="lang-ar"{{ end }} data-barba="wrapper">
+  {{- /* بديل GTM لمن يعطّل جافاسكربت — كما في صفحات الموقع تمامًا. */ -}}
+  {{- with .Site.Params.gtmId }}
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ . }}" height="0" width="0"
+      style="display:none;visibility:hidden"></iframe></noscript>
+  {{- end }}
   {{- /*
     ترتيب صفحات الموقع حرفيًّا: كل شيء داخل <main>، والمحتوى محصور بين
     كتلتَي الهيكل. الأولى تفتح `main-wrap data-scroll-container` بعد

@@ -67,6 +67,11 @@ disableDefaultSiteRedirect = true
 [params]
   organization = 'ZERO 2 ONE'
   organizationId = 'https://zero2one.sa/#organization'
+    # نفس خاصية GA4 وحاوية GTM المستخدمتين على الموقع: المدونة جزء من
+    # النطاق نفسه، وفصلها إلى خاصية ثانية يقطع رحلة الزائر بين المقال
+    # وصفحة الخدمة في التقارير.
+    ga4Id = 'G-Z7XN1NZY47'
+    gtmId = 'GTM-TVKP5KSX'
   logo = 'https://zero2one.sa/assets/icons/logo-z2o.svg'
   defaultImage = 'https://zero2one.sa/assets/images/about-us-zero2one.webp'
   defaultImageAr = 'https://zero2one.sa/assets/images/about-us-zero2one.webp'
