@@ -3,6 +3,17 @@
 # redirect, script, language cookie, or fragile request-time expression.
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # ----------------------------------------------------------------
+    #  اسم المضيف القانوني — يُكرَّر هنا عمدًا، وليس تكرارًا زائدًا.
+    #
+    #  ‏`RewriteEngine On` في .htaccess فرعي **يُعيد ضبط سياق التحويل**:
+    #  قواعد الجذر لا تُورَّث. فبلا هذه القاعدة بقيت المدونة كاملة تُقدَّم
+    #  على www بينما تحوّل بقيةُ الموقع — قِسناه: www/blog/ar/ ردّ 200
+    #  بعد أن صار www/ يردّ 301.
+    # ----------------------------------------------------------------
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^(.*)$ https://%1/blog/ar/$1 [R=301,L]
     # Add only exact, approved paths. Patterns are relative to /blog/ar/.
     # BEGIN verified Arabic 410 rules
     # No Arabic URL has been verified as permanently removed yet.
