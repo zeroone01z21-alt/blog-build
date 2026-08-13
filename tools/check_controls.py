@@ -41,6 +41,7 @@ GUARDED_FILES = [
     "CLAUDE.md",
     "ARCHITECTURE.md",
     "HANDOFF.md",
+    "BLOG_PLAYBOOK.md",           # سجل القرارات والأعطال — مرجع بناء مدونة ثانية
     "WRITER_GUIDE_AR.md",
     "hugo.toml",                    # عقد الروابط واللغات والتصنيفات وGoldmark
     "layouts/_default/_markup/render-image.html",  # يمنع صور Markdown الخارجية
