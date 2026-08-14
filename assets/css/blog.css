@@ -511,3 +511,58 @@ html[dir="rtl"] .post-body li { line-height: 2; }
 .notfound h1 { margin: 1rem 0 .5rem; font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.15; }
 .notfound > p:not(.code) { color: var(--muted); }
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   الشاشات الصغيرة
+   ═══════════════════════════════════════════════════════════════════
+   لم يكن في هذا الملف استعلام وسائط واحد. القياس على 390px: بطاقة
+   المقال **103 بكسل عرضًا** — لأن `.cards` شبكة ثلاثة أعمدة ثابتة
+   تُقسَّم على 343px متاحة. والنتيجة عمود من الكلمات لا بطاقة.
+
+   الطبقة هنا في آخر الملف عمدًا: تغلب ما قبلها بترتيب المصدر بلا
+   رفع تخصيص ولا !important، فتبقى القواعد الأصلية مقروءة كما كُتبت.
+
+   الحدود مختارة من المحتوى لا من أسماء الأجهزة: البطاقة تحتاج ~17rem
+   لتُقرأ، فعمودان يحتاجان ~36rem و ثلاثة ~54rem مع الفجوات والحشو. */
+
+/* ── لوحي وأصغر: عمودان ── */
+@media (max-width: 54rem) {
+   .cards,
+   .category-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+
+   /* البطل والحالة الفارغة وشريط التصنيفات: النصّ فوق والبصري تحته.
+      minmax(19rem,…) كان يحجز 304px من 390 فيسحق العمود الآخر. */
+   .blog-hero,
+   .empty-state,
+   .category-nav {
+      grid-template-columns: minmax(0, 1fr);
+   }
+
+   .category-nav {
+      gap: .75rem;
+   }
+}
+
+/* ── جوال: عمود واحد ── */
+@media (max-width: 36rem) {
+   .cards,
+   .category-grid {
+      grid-template-columns: minmax(0, 1fr);
+   }
+
+   /* دائرة الخلفية 28rem = 448px، أعرض من الشاشة نفسها. تُقاس بالشاشة
+      فتبقى لمسة بصرية بدل أن تصير خلفية تبتلع القسم. */
+   .empty-state::before {
+      width: min(28rem, 70vw);
+      height: min(28rem, 70vw);
+      inset-inline-end: -20vw;
+      inset-block-end: -24vw;
+   }
+
+   /* عنوان الأرشيف يصل 6.5rem — على 390px يكسر الكلمة العربية. */
+   .archive-head h1 {
+      font-size: clamp(2.2rem, 11vw, 3.4rem);
+   }
+}
