@@ -175,6 +175,31 @@ def check_file(path, schema, problems):
     if len(body.strip()) < 200 and not fm.get("draft"):
         bad("المقال شبه فارغ. اكتب المحتوى أو أعده مسودة قبل النشر.")
 
+    # ── العناوين ──────────────────────────────────────────────────────
+    # زرّ «عنوان 1» غائب من اللوحة، لكن الكاتب قد يلصق نصًّا من مكان آخر
+    # أو يكتب # في وضع markdown. والقالب يضع عنوان المقال h1 بنفسه، فأي
+    # h1 هنا يعني اثنين — وبوابة check_seo.py تُسقط البناء برسالة عن ملف
+    # مبني لا يعرف الكاتب صلته بمقاله.
+    #
+    # الأفضل أن يُمسك هنا: باسم ملفه، وبالعربية، وقبل أن يبدأ البناء.
+    headings = [
+        (len(m.group(1)), m.group(2).strip())
+        for m in re.finditer(r"(?m)^(#{1,6})\s+(.*)$", body)
+    ]
+    for level, text in headings:
+        if level == 1:
+            bad(f"«{text[:40]}» عنوان من الدرجة الأولى (#). عنوان المقال "
+                "يضعه الموقع تلقائيًّا — ابدأ عناوينك الفرعية من «عنوان 2».")
+
+    # قفزة في التسلسل تُسقط البناء أيضًا. العنوان الأول في الجسم يقابله
+    # h1 من القالب، فيجب أن يكون h2.
+    previous = 1
+    for level, text in headings:
+        if level > previous + 1:
+            bad(f"«{text[:40]}» قفزة من عنوان {previous} إلى {level}. "
+                f"استعمل «عنوان {previous + 1}» بدلها.")
+        previous = level
+
 
 def check_images(directory, schema, problems):
     cap = schema["bundle"]["max_image_bytes"]

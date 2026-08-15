@@ -183,4 +183,20 @@ collections:
         widget: "richtext"
         required: true
         i18n: true
-        hint: "اكتب المقال منظمًا بعناوين فرعية وقوائم. لا تلصق HTML خامًا."
+        buttons:
+          - "bold"
+          - "italic"
+          - "heading-two"
+          - "heading-three"
+          - "heading-four"
+          - "heading-five"
+          - "heading-six"
+          - "bulleted-list"
+          - "numbered-list"
+          - "blockquote"
+          - "code"
+          - "link"
+        modes:
+          - "rich-text"
+          - "markdown"
+        hint: "العناوين تبدأ من «عنوان 2» — «عنوان 1» هو عنوان المقال ويضعه الموقع تلقائيًّا. للربط الداخلي: حدّد الكلمة ثم اضغط زرّ الرابط واكتب مسارًا يبدأ بـ / مثل /ar/services/seo-riyadh/"
