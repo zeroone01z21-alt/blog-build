@@ -56,7 +56,7 @@
                             </a>
                         </li>
                     <li class="btn btn-link btn-lang">
-                            <a href="/ar/" class="btn-click magnetic" data-strength="20" data-strength-text="10"
+                            <a href="{{ with $.AllTranslations }}{{ range . }}{{ if ne .Lang $.Lang }}{{ .RelPermalink }}{{ end }}{{ end }}{{ else }}{{ if eq $.Lang "ar" }}/blog/{{ else }}/blog/ar/{{ end }}{{ end }}" class="btn-click magnetic" data-strength="20" data-strength-text="10"
                                 hreflang="ar" lang="ar" data-barba-prevent>
                                 <span class="btn-text">
                                     <span class="btn-text-inner">العربية</span>

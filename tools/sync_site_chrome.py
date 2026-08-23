@@ -64,7 +64,29 @@ def clean(block):
        صورة مكسورة في الفوتر. الإنتاج على النطاق نفسه فلا فرق عنده.
     """
     block = re.sub(r"<\?xml[^>]*\?>\s*", "", block)
-    return re.sub(r'((?:src|srcset)=")(/assets/)', rf"\1{ORIGIN}\2", block)
+    block = re.sub(r'((?:src|srcset)=")(/assets/)', rf"\1{ORIGIN}\2", block)
+    return lang_switch(block)
+
+
+def lang_switch(block):
+    """زرّ تبديل اللغة يصير ديناميكيًّا حسب الصفحة المعروضة.
+
+    الكتلة تُنسخ حرفيًّا من `work/index.html`، فيأتي معها زرّ لغة **تلك
+    الصفحة**: زائر المدونة العربية يضغط «English» فيجد نفسه في صفحة
+    الأعمال. قِسناه على الحيّ: href=/work/ ومعه hreflang=en.
+
+    الحلّ أن يُستبدل المسار بتعبير Hugo يُنفَّذ في كل صفحة: نظير الصفحة
+    الحالية إن كان له ترجمة، وإلا جذر المدونة باللغة الأخرى — لا صفحة
+    من الموقع لا صلة لها بما يقرأ.
+    """
+    expr = ('{{ with $.AllTranslations }}'
+            '{{ range . }}{{ if ne .Lang $.Lang }}{{ .RelPermalink }}{{ end }}{{ end }}'
+            '{{ else }}{{ if eq $.Lang "ar" }}/blog/{{ else }}/blog/ar/{{ end }}{{ end }}')
+    def swap(m):
+        return m.group(1) + expr + m.group(3)
+    return re.sub(
+        r'(<li class="btn btn-link btn-lang">.*?<a href=")([^"]*)(")',
+        swap, block, flags=re.S)
 
 
 def balanced_div(html, opener):

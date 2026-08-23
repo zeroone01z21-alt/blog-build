@@ -8,6 +8,18 @@
         <div class="mouse-pos-list-span no-select">
             <p>View</p>
         </div>
+        <!-- ===== Floating WhatsApp button =====
+             Sits beside the hamburger, inside <main> but outside .main-wrap.
+             That placement is deliberate on two counts:
+               • .main-wrap carries locomotive's transform, and a transformed
+                 ancestor makes position:fixed resolve against IT, not the
+                 viewport — the button would scroll away with the page.
+               • tools/sync_site_chrome.py extracts from <main> to .main-wrap,
+                 so the blog inherits this button with no second copy. -->
+        <a class="wa-float" href="https://wa.me/966530307054" target="_blank"
+            rel="noopener" aria-label="WhatsApp">
+            <span class="wa-float-icon" aria-hidden="true"></span>
+        </a>
         <!-- ===== Floating hamburger button (opens the side menu) ===== -->
         <div class="btn btn-hamburger">
             <div class="btn-click magnetic" data-strength="50" data-strength-text="25">
@@ -82,7 +94,7 @@
                             </a>
                         </li>
                     <li class="btn btn-link btn-lang">
-                            <a href="/ar/" class="btn-click magnetic" data-strength="20" data-strength-text="10"
+                            <a href="{{ with $.AllTranslations }}{{ range . }}{{ if ne .Lang $.Lang }}{{ .RelPermalink }}{{ end }}{{ end }}{{ else }}{{ if eq $.Lang "ar" }}/blog/{{ else }}/blog/ar/{{ end }}{{ end }}" class="btn-click magnetic" data-strength="20" data-strength-text="10"
                                 hreflang="ar" lang="ar" data-barba-prevent>
                                 <span class="btn-text">
                                     <span class="btn-text-inner">العربية</span>
