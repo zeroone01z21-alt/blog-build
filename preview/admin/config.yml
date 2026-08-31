@@ -70,6 +70,15 @@ collections:
         maxlength: 70
         widget: "string"
       -
+        name: "meta_title"
+        label: "عنوان محركات البحث (اختياري)"
+        required: false
+        i18n: true
+        hint: "اتركه فارغًا ليُستعمل عنوان المقال. املأه حين تريد عنوانًا مختلفًا في نتائج جوجل — يظهر كما تكتبه تمامًا، بلا إضافة اسم المدونة. لا يغيّر العنوان داخل الصفحة ولا بطاقة المشاركة."
+        minlength: 10
+        maxlength: 70
+        widget: "string"
+      -
         name: "description"
         label: "الوصف الذي يظهر في نتائج البحث"
         required: true

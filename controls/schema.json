@@ -35,6 +35,14 @@
       "max_length": 70,
       "error_ar": "العنوان يجب أن يكون بين 10 و70 محرفاً. عنوانك الآن {actual} محرفاً."
     },
+    "meta_title": {
+      "type": "string",
+      "required": false,
+      "min_length": 10,
+      "max_length": 70,
+      "$comment": "اختياري. يحلّ محلّ <title> حرفيًّا بلا لاحقة اسم المدونة. check_seo.py يفرض 10-70 على العنصر الناتج، فالحدّان هنا يطابقانه.",
+      "error_ar": "عنوان محركات البحث يجب أن يكون بين 10 و70 محرفاً. عنوانك الآن {actual} محرفاً."
+    },
     "description": {
       "type": "string",
       "required": true,

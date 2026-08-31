@@ -18,8 +18,19 @@
 {{- end -}}
 {{- $desc := cond $is404 (T "notFoundDescription") (.Description | default .Site.Params.description | default .Summary) -}}
 {{- $pageTitle := cond $is404 (T "notFound") (cond .IsHome .Site.Title .Title) -}}
+{{- /*
+  عنوان محركات البحث اختياري ويحلّ محلّ <title> حرفيًّا — بلا لاحقة اسم
+  المدونة، لأن الكاتب الذي يصوغ عنوانًا لجوجل يريد ما كتبه لا ما نضيفه.
+  عقد المحتوى يحدّه بـ10-70 محرفًا وهو المدى نفسه الذي يفرضه check_seo.py
+  على العنصر الناتج، فلا يمكن أن يمرّ من اللوحة عنوان يُسقط البناء.
+  og:title وtwitter:title تبقى على .Title: بطاقة المشاركة يقرؤها إنسان،
+  والعنوان التحريري أنسب لها من عنوان مُحسَّن للفهرسة.
+*/ -}}
+{{- $metaTitle := .Params.meta_title | default "" -}}
 {{- $documentTitle := $pageTitle -}}
-{{- if not .IsHome -}}
+{{- if $metaTitle -}}
+  {{- $documentTitle = $metaTitle -}}
+{{- else if not .IsHome -}}
   {{- $brandedTitle := printf "%s — %s" $pageTitle .Site.Title -}}
   {{- /* لا نفشل عنوانًا يسمح به عقد المحتوى لمجرد إضافة اسم المدونة. */ -}}
   {{- if le (strings.RuneCount $brandedTitle) 70 }}
