@@ -60,8 +60,17 @@ jobs:
           fi
 
           # الرمز في الرابط لا في سطر أمر منفصل، حتى لا يظهر في أي سجل
-          git push --mirror \
+          #
+          # الفروع والوسوم صراحةً لا --mirror: الأخير يدفع refs/* كاملة،
+          # ومنها refs/pull/* التي يصنعها GitHub لكل طلب سحب. وGitea على
+          # Codeberg يرفضها بـ«deny updating a hidden ref»، فتفشل الدفعة
+          # كلها. لذلك ظلّ النسخ ينجح حتى أول طلب سحب (2026-08-09) ثم
+          # انكسر خمس مرّات متتالية بلا أن ينتبه أحد، بينما بقي blog-deploy
+          # ناجحًا لأنه بلا طلبات سحب.
+          # --prune يبقي حذف الفروع منسوخًا كما كان يفعل --mirror.
+          git push --prune \
             "https://oauth2:${TOKEN}@codeberg.org/zero2one/${{ matrix.repo }}.git" \
+            "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*" \
             2>&1 | sed -E "s#//[^@]*@#//***@#g"
 
           echo "✅ ${{ matrix.repo }}: $(git rev-parse --short HEAD 2>/dev/null || echo '—')"
