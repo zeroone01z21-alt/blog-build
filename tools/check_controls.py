@@ -42,6 +42,7 @@ GUARDED_FILES = [
     "ARCHITECTURE.md",
     "HANDOFF.md",
     "BLOG_PLAYBOOK.md",           # سجل القرارات والأعطال — مرجع بناء مدونة ثانية
+    "META_TITLE.md",              # كيف أُضيف حقل meta_title — ووصفة أي حقل جديد
     "WRITER_GUIDE_AR.md",
     "hugo.toml",                    # عقد الروابط واللغات والتصنيفات وGoldmark
     "layouts/_default/_markup/render-image.html",  # يمنع صور Markdown الخارجية
