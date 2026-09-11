@@ -110,46 +110,54 @@ def main() -> int:
     if config.get("public_folder") != public_folder:
         problems.append("مسار الوسائط العام لا يطابق مسار المدونة")
 
+    # مجموعة لكل لغة — لا مجموعة i18n واحدة.
+    #
+    # ‏Sveltia لا تتيح تعطيل default_locale، فمجموعة واحدة تفرض لغةً ما على
+    # كل مقال. المجموعتان تحرّران الاتجاهين، وهذا الحارس يفرض القواعد نفسها
+    # على كلٍّ منهما بلا تخفيف.
     collections = config.get("collections", [])
-    if len(collections) != 1 or collections[0].get("name") != "posts":
-        problems.append("يجب أن تكون posts المجموعة التحريرية الوحيدة")
+    languages = schema["languages"]["available"]
+    expected_collections = [f"posts_{lang}" for lang in languages]
+    if [c.get("name") for c in collections] != expected_collections:
+        problems.append(
+            "المجموعات التحريرية يجب أن تكون " + " و".join(expected_collections)
+        )
     else:
-        posts = collections[0]
+        for lang, posts in zip(languages, collections):
+            expected_path = "{{slug}}/index." + lang
         if posts.get("delete") is not False:
-            problems.append("زر حذف المقالات غير معطل")
+            problems.append(f"[{lang}] [{lang}] زر حذف المقالات غير معطل")
         if posts.get("duplicate") is not False:
-            problems.append("نسخ المقالات غير معطل")
-        if posts.get("folder") != collection_folder or posts.get("path") != "{{slug}}/index":
-            problems.append("مسار حزمة Hugo غير صحيح")
+            problems.append(f"[{lang}] [{lang}] نسخ المقالات غير معطل")
+        if posts.get("folder") != collection_folder or posts.get("path") != expected_path:
+            problems.append(f"[{lang}] [{lang}] مسار حزمة Hugo غير صحيح")
         if posts.get("media_folder") != "" or posts.get("public_folder") != "":
-            problems.append("صور المقال يجب أن تبقى داخل حزمة Hugo وبمسار نسبي")
-
+            problems.append(f"[{lang}] [{lang}] صور المقال يجب أن تبقى داخل حزمة Hugo وبمسار نسبي")
         fields = {field.get("name"): field for field in posts.get("fields", [])}
         expected_names = set(schema["fields"]) | {"body"}
         if set(fields) != expected_names:
-            problems.append("حقول المقال لا تطابق schema.json + body")
+            problems.append(f"[{lang}] [{lang}] حقول المقال لا تطابق schema.json + body")
         for name, rule in schema["fields"].items():
             field = fields.get(name, {})
             if field.get("required") != bool(rule.get("required", False)):
-                problems.append(f"required للحقل {name} لا يطابق المخطط")
+                problems.append(f"[{lang}] required للحقل {name} لا يطابق المخطط")
             if "min_length" in rule and field.get("minlength") != rule["min_length"]:
-                problems.append(f"minlength للحقل {name} لا يطابق المخطط")
+                problems.append(f"[{lang}] minlength للحقل {name} لا يطابق المخطط")
             if "max_length" in rule and field.get("maxlength") != rule["max_length"]:
-                problems.append(f"maxlength للحقل {name} لا يطابق المخطط")
+                problems.append(f"[{lang}] maxlength للحقل {name} لا يطابق المخطط")
             if rule.get("pattern") and field.get("pattern", [None])[0] != rule["pattern"]:
-                problems.append(f"pattern للحقل {name} لا يطابق المخطط")
-
+                problems.append(f"[{lang}] pattern للحقل {name} لا يطابق المخطط")
         category = fields.get("categories", {})
         expected_slugs = [item["slug"] for item in schema["categories"]["items"]]
         actual_slugs = [item.get("value") for item in category.get("options", [])]
         if actual_slugs != expected_slugs or not category.get("multiple"):
-            problems.append("قائمة التصنيفات لا تطابق slugs المخطط")
+            problems.append(f"[{lang}] [{lang}] قائمة التصنيفات لا تطابق slugs المخطط")
         if category.get("min") != schema["fields"]["categories"].get("min_items"):
-            problems.append("الحد الأدنى للتصنيفات لا يطابق المخطط")
+            problems.append(f"[{lang}] [{lang}] الحد الأدنى للتصنيفات لا يطابق المخطط")
         if fields.get("featured_image", {}).get("choose_url") is not False:
-            problems.append("اختيار صورة من رابط خارجي غير معطل")
+            problems.append(f"[{lang}] [{lang}] اختيار صورة من رابط خارجي غير معطل")
         if fields.get("featured_image_alt", {}).get("required") is not True:
-            problems.append("النص البديل للصورة غير إلزامي")
+            problems.append(f"[{lang}] [{lang}] النص البديل للصورة غير إلزامي")
 
     media = config.get("media_libraries", {}).get("all", {})
     if media.get("max_file_size") != schema["bundle"]["max_image_bytes"]:

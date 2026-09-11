@@ -259,6 +259,54 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
     return fields
 
 
+LANG_LABELS = {
+    "ar": ("المقالات العربية", "مقال عربي"),
+    "en": ("المقالات الإنجليزية", "مقال إنجليزي"),
+}
+
+
+def post_collection(lang: str, collection_folder: str, schema: dict[str, Any]) -> dict[str, Any]:
+    """مجموعة تحريرية للغة واحدة.
+
+    مجموعة i18n واحدة لا تستطيع نشر مقال بلغة واحدة في الاتجاهين: Sveltia
+    تُبقي default_locale مفعّلة ولا تتيح تعطيلها — رابط توثيقها نفسه
+    ‏«disabling-non-default-locale-content» — فأيًّا كانت اللغة الافتراضية
+    تبقى مفروضة على كل مقال. ومجموعتان مستقلّتان تحلّان الاتجاهين معًا.
+
+    والتصفية تعمل لأن Sveltia تبني regex من `path` وتطابق به أسماء الملفات
+    (scanningPathsRegEx في الحزمة)، فـ«{{slug}}/index.ar» لا يلتقط
+    ‏index.en.md ولا العكس.
+
+    والمجلد واحد للاثنتين عمدًا: حزمة صفحة Hugo واحدة لكل مقال، فالمقال
+    ثنائي اللغة يُنشأ مرّتين بنفس الـslug فيلتقي ملفّاه في المجلد نفسه
+    وتُزاوجهما Hugo تلقائيًّا.
+    """
+    label, singular = LANG_LABELS[lang]
+    fields = [
+        {key: value for key, value in field.items() if key != "i18n"}
+        for field in build_fields(schema)
+    ]
+    return {
+        "name": f"posts_{lang}",
+        "label": label,
+        "label_singular": singular,
+        "icon": "article",
+        "folder": collection_folder,
+        "path": "{{slug}}/index." + lang,
+        "slug": "{{fields.slug}}",
+        "identifier_field": "title",
+        "format": "yaml-frontmatter",
+        "extension": "md",
+        "media_folder": "",
+        "public_folder": "",
+        "create": True,
+        "delete": False,
+        "duplicate": False,
+        "summary": "{{title}} · {{categories}}",
+        "fields": fields,
+    }
+
+
 def build_config(schema: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     languages = schema["languages"]
     fields = schema["fields"]
@@ -275,8 +323,10 @@ def build_config(schema: dict[str, Any], settings: dict[str, Any]) -> dict[str, 
         "i18n": {
             "structure": "multiple_files",
             "locales": languages["available"],
+            # لا مجموعة تشترك في i18n بعد الآن — لكل لغة مجموعتها. تبقى
+            # هذه الكتلة تعريفًا للّغات المعروفة يفحصه check_cms، ولا تحكم
+            # سلوك المحرّر.
             "default_locale": languages["default"],
-            "initial_locales": "all",
         },
         "slug": {
             "encoding": "ascii",
@@ -305,26 +355,8 @@ def build_config(schema: dict[str, Any], settings: dict[str, Any]) -> dict[str, 
             }
         },
         "collections": [
-            {
-                "name": "posts",
-                "label": "المقالات",
-                "label_singular": "مقال",
-                "icon": "article",
-                "folder": collection_folder,
-                "path": "{{slug}}/index",
-                "slug": "{{fields.slug}}",
-                "identifier_field": "title",
-                "format": "yaml-frontmatter",
-                "extension": "md",
-                "media_folder": "",
-                "public_folder": "",
-                "i18n": True,
-                "create": True,
-                "delete": False,
-                "duplicate": False,
-                "summary": "{{title}} · {{categories}} · {{locales}}",
-                "fields": build_fields(schema),
-            }
+            post_collection(lang, collection_folder, schema)
+            for lang in languages["available"]
         ],
     }
 
