@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import os
+import io
 import re
 import sys
 from urllib.parse import urlsplit
@@ -16,6 +17,32 @@ VENDOR = os.path.join(ADMIN, "vendor", "sveltia-cms.js")
 INDEX = os.path.join(ADMIN, "index.html")
 EXPECTED_VENDOR_SHA256 = "bc0fd1a08e46fc6b80d5dc4c90951bb0eeed346ce8fbadb7dd6dd230379abc03"
 EXPECTED_SRI = "sha384-mVjEYeNjgFrDMldKYRXtGqYoTQX7l0LLf7wSUABCSIcQqRQPQckldCncpzRv0zHF"
+
+
+def known_button_names() -> set[str]:
+    """أسماء أزرار المحرّر التي تقبلها نسخة Sveltia المرفقة.
+
+    المحرّر يمرّر كل اسم في `buttons` عبر خريطة أسماء Netlify القديمة ثم
+    يُسقط ما ليس فيها بلا تحذير ولا خطأ — .map(e => MAP[e]).filter(Boolean)
+    في الحزمة. فزرٌّ باسم خاطئ لا يظهر، ولا شيء يقول لماذا. حدث فعليًّا مع
+    «blockquote»: الاسم المقبول «quote».
+
+    تُقرأ الخريطة من الحزمة نفسها لا من قائمة مكتوبة هنا، فتبقى صحيحة إذا
+    رُقّيت Sveltia وتغيّرت أسماؤها.
+    """
+    try:
+        blob = io.open(VENDOR, encoding="utf-8", errors="ignore").read()
+    except OSError:
+        return set()
+    anchor = blob.find('"heading-one":')
+    if anchor == -1:
+        return set()
+    start = blob.rfind("{", 0, anchor)
+    end = blob.find("}", anchor)
+    if start == -1 or end == -1:
+        return set()
+    pairs = re.findall(r'(?:"([a-z-]+)"|\b([a-z-]+))\s*:\s*`', blob[start:end])
+    return {quoted or bare for quoted, bare in pairs}
 
 
 def load_generator():
@@ -115,6 +142,11 @@ def main() -> int:
     # ‏Sveltia لا تتيح تعطيل default_locale، فمجموعة واحدة تفرض لغةً ما على
     # كل مقال. المجموعتان تحرّران الاتجاهين، وهذا الحارس يفرض القواعد نفسها
     # على كلٍّ منهما بلا تخفيف.
+    # مجموعة تحريرية لكل لغة — لا مجموعة i18n واحدة.
+    #
+    # ‏Sveltia لا تتيح تعطيل default_locale، فمجموعة واحدة تفرض لغةً ما على
+    # كل مقال. المجموعتان تحرّران الاتجاهين، وهذا الحارس يفرض القواعد نفسها
+    # على كلٍّ منهما بلا تخفيف.
     collections = config.get("collections", [])
     languages = schema["languages"]["available"]
     expected_collections = [f"posts_{lang}" for lang in languages]
@@ -123,41 +155,53 @@ def main() -> int:
             "المجموعات التحريرية يجب أن تكون " + " و".join(expected_collections)
         )
     else:
+        allowed_buttons = known_button_names()
         for lang, posts in zip(languages, collections):
             expected_path = "{{slug}}/index." + lang
-        if posts.get("delete") is not False:
-            problems.append(f"[{lang}] [{lang}] زر حذف المقالات غير معطل")
-        if posts.get("duplicate") is not False:
-            problems.append(f"[{lang}] [{lang}] نسخ المقالات غير معطل")
-        if posts.get("folder") != collection_folder or posts.get("path") != expected_path:
-            problems.append(f"[{lang}] [{lang}] مسار حزمة Hugo غير صحيح")
-        if posts.get("media_folder") != "" or posts.get("public_folder") != "":
-            problems.append(f"[{lang}] [{lang}] صور المقال يجب أن تبقى داخل حزمة Hugo وبمسار نسبي")
-        fields = {field.get("name"): field for field in posts.get("fields", [])}
-        expected_names = set(schema["fields"]) | {"body"}
-        if set(fields) != expected_names:
-            problems.append(f"[{lang}] [{lang}] حقول المقال لا تطابق schema.json + body")
-        for name, rule in schema["fields"].items():
-            field = fields.get(name, {})
-            if field.get("required") != bool(rule.get("required", False)):
-                problems.append(f"[{lang}] required للحقل {name} لا يطابق المخطط")
-            if "min_length" in rule and field.get("minlength") != rule["min_length"]:
-                problems.append(f"[{lang}] minlength للحقل {name} لا يطابق المخطط")
-            if "max_length" in rule and field.get("maxlength") != rule["max_length"]:
-                problems.append(f"[{lang}] maxlength للحقل {name} لا يطابق المخطط")
-            if rule.get("pattern") and field.get("pattern", [None])[0] != rule["pattern"]:
-                problems.append(f"[{lang}] pattern للحقل {name} لا يطابق المخطط")
-        category = fields.get("categories", {})
-        expected_slugs = [item["slug"] for item in schema["categories"]["items"]]
-        actual_slugs = [item.get("value") for item in category.get("options", [])]
-        if actual_slugs != expected_slugs or not category.get("multiple"):
-            problems.append(f"[{lang}] [{lang}] قائمة التصنيفات لا تطابق slugs المخطط")
-        if category.get("min") != schema["fields"]["categories"].get("min_items"):
-            problems.append(f"[{lang}] [{lang}] الحد الأدنى للتصنيفات لا يطابق المخطط")
-        if fields.get("featured_image", {}).get("choose_url") is not False:
-            problems.append(f"[{lang}] [{lang}] اختيار صورة من رابط خارجي غير معطل")
-        if fields.get("featured_image_alt", {}).get("required") is not True:
-            problems.append(f"[{lang}] [{lang}] النص البديل للصورة غير إلزامي")
+            if posts.get("delete") is not False:
+                problems.append(f"[{lang}] زر حذف المقالات غير معطل")
+            if posts.get("duplicate") is not False:
+                problems.append(f"[{lang}] نسخ المقالات غير معطل")
+            if posts.get("folder") != collection_folder or posts.get("path") != expected_path:
+                problems.append(f"[{lang}] مسار حزمة Hugo غير صحيح")
+            if posts.get("media_folder") != "" or posts.get("public_folder") != "":
+                problems.append(f"[{lang}] صور المقال يجب أن تبقى داخل حزمة Hugo وبمسار نسبي")
+            if posts.get("i18n"):
+                problems.append(f"[{lang}] المجموعة تشترك في i18n فتفرض اللغة الأخرى")
+
+            fields = {field.get("name"): field for field in posts.get("fields", [])}
+            expected_names = set(schema["fields"]) | {"body"}
+            if set(fields) != expected_names:
+                problems.append(f"[{lang}] حقول المقال لا تطابق schema.json + body")
+            for name, rule in schema["fields"].items():
+                field = fields.get(name, {})
+                if field.get("required") != bool(rule.get("required", False)):
+                    problems.append(f"[{lang}] required للحقل {name} لا يطابق المخطط")
+                if "min_length" in rule and field.get("minlength") != rule["min_length"]:
+                    problems.append(f"[{lang}] minlength للحقل {name} لا يطابق المخطط")
+                if "max_length" in rule and field.get("maxlength") != rule["max_length"]:
+                    problems.append(f"[{lang}] maxlength للحقل {name} لا يطابق المخطط")
+                if rule.get("pattern") and field.get("pattern", [None])[0] != rule["pattern"]:
+                    problems.append(f"[{lang}] pattern للحقل {name} لا يطابق المخطط")
+
+            category = fields.get("categories", {})
+            expected_slugs = [item["slug"] for item in schema["categories"]["items"]]
+            actual_slugs = [item.get("value") for item in category.get("options", [])]
+            if actual_slugs != expected_slugs or not category.get("multiple"):
+                problems.append(f"[{lang}] قائمة التصنيفات لا تطابق slugs المخطط")
+            if category.get("min") != schema["fields"]["categories"].get("min_items"):
+                problems.append(f"[{lang}] الحد الأدنى للتصنيفات لا يطابق المخطط")
+            if fields.get("featured_image", {}).get("choose_url") is not False:
+                problems.append(f"[{lang}] اختيار صورة من رابط خارجي غير معطل")
+            if fields.get("featured_image_alt", {}).get("required") is not True:
+                problems.append(f"[{lang}] النص البديل للصورة غير إلزامي")
+
+            # أزرار المحرّر: الاسم المجهول يُحذف بلا صوت ولا خطأ.
+            unknown = sorted(set(fields.get("body", {}).get("buttons", [])) - allowed_buttons)
+            if allowed_buttons and unknown:
+                problems.append(
+                    f"[{lang}] أزرار لا تعرفها Sveltia فستختفي صامتة: " + "، ".join(unknown)
+                )
 
     media = config.get("media_libraries", {}).get("all", {})
     if media.get("max_file_size") != schema["bundle"]["max_image_bytes"]:

@@ -196,7 +196,7 @@ collections:
           - "heading-six"
           - "bulleted-list"
           - "numbered-list"
-          - "blockquote"
+          - "quote"
           - "code"
           - "link"
         modes:
@@ -358,7 +358,7 @@ collections:
           - "heading-six"
           - "bulleted-list"
           - "numbered-list"
-          - "blockquote"
+          - "quote"
           - "code"
           - "link"
         modes:

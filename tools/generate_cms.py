@@ -244,12 +244,18 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
         "widget": "richtext",
         "required": True,
         "i18n": True,
-        "buttons": [
+        # أسماء Netlify القديمة لا أسماء Sveltia الأصلية: المحرّر يمرّر كل
+            # اسم عبر خريطة تحويل ثم يُسقط ما ليس فيها بلا تحذير
+            # (‏.map(e => MAP[e]).filter(Boolean) في الحزمة). فـ«blockquote»
+            # كان يختفي صامتًا — مفتاح الخريطة اسمه «quote».
+            # وأزرار الكتلة (العناوين والقوائم والاقتباس) تظهر داخل قائمة ¶
+            # المنسدلة لا كأيقونات مستقلّة، وهذا سلوك المحرّر لا نقص فيه.
+            "buttons": [
             "bold", "italic",
             "heading-two", "heading-three", "heading-four",
             "heading-five", "heading-six",
             "bulleted-list", "numbered-list",
-            "blockquote", "code", "link",
+            "quote", "code", "link",
         ],
         "modes": ["rich-text", "markdown"],
         "hint": (
