@@ -105,7 +105,8 @@ collections:
         required: true
         hint: "يُملأ تلقائيًا عند إنشاء المقال. عدّله فقط عند جدولة تاريخ النشر."
         widget: "datetime"
-        format: "YYYY-MM-DDTHH:mm:ssZZ"
+        format: "YYYY-MM-DDTHH:mm:ssZ"
+        input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
         picker_utc: false
@@ -116,7 +117,8 @@ collections:
         required: false
         hint: "حدّثه عند تعديل مقال منشور. اتركه فارغًا للمقال الجديد."
         widget: "datetime"
-        format: "YYYY-MM-DDTHH:mm:ssZZ"
+        format: "YYYY-MM-DDTHH:mm:ssZ"
+        input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
         picker_utc: false
@@ -267,7 +269,8 @@ collections:
         required: true
         hint: "يُملأ تلقائيًا عند إنشاء المقال. عدّله فقط عند جدولة تاريخ النشر."
         widget: "datetime"
-        format: "YYYY-MM-DDTHH:mm:ssZZ"
+        format: "YYYY-MM-DDTHH:mm:ssZ"
+        input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
         picker_utc: false
@@ -278,7 +281,8 @@ collections:
         required: false
         hint: "حدّثه عند تعديل مقال منشور. اتركه فارغًا للمقال الجديد."
         widget: "datetime"
-        format: "YYYY-MM-DDTHH:mm:ssZZ"
+        format: "YYYY-MM-DDTHH:mm:ssZ"
+        input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
         picker_utc: false

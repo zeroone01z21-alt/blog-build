@@ -146,9 +146,22 @@ def check_file(path, schema, problems):
             raw = str(val).strip().strip('"\'')
             try:
                 import datetime as _dt
-                _dt.datetime.fromisoformat(raw)
-                if len(raw) < 19 or ("+" not in raw and "Z" not in raw[10:]):
+                # عطلان اجتمعا على رفض تاريخ صحيح في 2026-09-12 («-0700»):
+                #
+                # الأول أن الشرط القديم كان يطلب "+" أو "Z"، فيرفض كل توقيت
+                # غرب غرينتش. والثاني أن fromisoformat قبل بايثون 3.11 لا
+                # يقبل إزاحة بلا نقطتين ولا الحرف Z — وبايثون المشغّل هنا
+                # ‏3.9. فيُفحص الشكل بنمط صريح، ثم تُسوّى الإزاحة قبل
+                # التحليل بدل الاتّكال على نسخة المفسّر.
+                if not re.match(
+                    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:?\d{2})$",
+                    raw,
+                ):
                     raise ValueError
+                normalised = re.sub(
+                    r"([+-]\d{2})(\d{2})$", r"\1:\2", raw.replace("Z", "+00:00")
+                )
+                _dt.datetime.fromisoformat(normalised)
             except Exception:
                 bad(f"التاريخ «{raw}» بصيغة لا يقبلها النظام. "
                     "الصيغة الصحيحة مثل 2026-08-07T20:22:00+03:00 — "
