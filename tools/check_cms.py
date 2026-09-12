@@ -19,6 +19,23 @@ EXPECTED_VENDOR_SHA256 = "bc0fd1a08e46fc6b80d5dc4c90951bb0eeed346ce8fbadb7dd6dd2
 EXPECTED_SRI = "sha384-mVjEYeNjgFrDMldKYRXtGqYoTQX7l0LLf7wSUABCSIcQqRQPQckldCncpzRv0zHF"
 
 
+def known_mode_names() -> set[str]:
+    """أسماء أوضاع المحرّر التي تقبلها نسخة Sveltia المرفقة.
+
+    مثل الأزرار تمامًا: الاسم المجهول يُحذف صامتًا. والفرق أن قائمة أوضاع
+    فارغة تُعطّل شريط الأدوات **كلَّه** لا زرًّا واحدًا — حدث فعليًّا مع
+    ‏"rich-text"/"markdown" بدل "rich_text"/"raw".
+    """
+    try:
+        blob = io.open(VENDOR, encoding="utf-8", errors="ignore").read()
+    except OSError:
+        return set()
+    match = re.search(r"\{rich_text:`[^`]+`,raw:`[^`]+`\}", blob)
+    if not match:
+        return set()
+    return set(re.findall(r"(\w+):`", match.group(0)))
+
+
 def known_button_names() -> set[str]:
     """أسماء أزرار المحرّر التي تقبلها نسخة Sveltia المرفقة.
 
@@ -156,6 +173,7 @@ def main() -> int:
         )
     else:
         allowed_buttons = known_button_names()
+        allowed_modes = known_mode_names()
         for lang, posts in zip(languages, collections):
             expected_path = "{{slug}}/index." + lang
             if posts.get("delete") is not False:
@@ -195,6 +213,15 @@ def main() -> int:
                 problems.append(f"[{lang}] اختيار صورة من رابط خارجي غير معطل")
             if fields.get("featured_image_alt", {}).get("required") is not True:
                 problems.append(f"[{lang}] النص البديل للصورة غير إلزامي")
+
+            # أوضاع المحرّر: القائمة الفارغة تُعطّل الشريط كلَّه.
+            modes = fields.get("body", {}).get("modes", [])
+            bad_modes = sorted(set(modes) - allowed_modes)
+            if allowed_modes and bad_modes:
+                problems.append(
+                    f"[{lang}] أوضاع محرّر مجهولة تُعطّل شريط الأدوات كلَّه: "
+                    + "، ".join(bad_modes)
+                )
 
             # أزرار المحرّر: الاسم المجهول يُحذف بلا صوت ولا خطأ.
             unknown = sorted(set(fields.get("body", {}).get("buttons", [])) - allowed_buttons)

@@ -109,7 +109,6 @@ collections:
         input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
-        picker_utc: false
         default: "{{now}}"
       -
         name: "lastmod"
@@ -121,7 +120,6 @@ collections:
         input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
-        picker_utc: false
       -
         name: "draft"
         label: "حالة النشر"
@@ -202,8 +200,8 @@ collections:
           - "code"
           - "link"
         modes:
-          - "rich-text"
-          - "markdown"
+          - "rich_text"
+          - "raw"
         hint: "العناوين تبدأ من «عنوان 2» — «عنوان 1» هو عنوان المقال ويضعه الموقع تلقائيًّا. للربط الداخلي: حدّد الكلمة ثم اضغط زرّ الرابط واكتب مسارًا يبدأ بـ / مثل /ar/services/seo-riyadh/"
   -
     name: "posts_ar"
@@ -273,7 +271,6 @@ collections:
         input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
-        picker_utc: false
         default: "{{now}}"
       -
         name: "lastmod"
@@ -285,7 +282,6 @@ collections:
         input_timezone: "Asia/Riyadh"
         date_format: "YYYY-MM-DD"
         time_format: "HH:mm"
-        picker_utc: false
       -
         name: "draft"
         label: "حالة النشر"
@@ -366,6 +362,6 @@ collections:
           - "code"
           - "link"
         modes:
-          - "rich-text"
-          - "markdown"
+          - "rich_text"
+          - "raw"
         hint: "العناوين تبدأ من «عنوان 2» — «عنوان 1» هو عنوان المقال ويضعه الموقع تلقائيًّا. للربط الداخلي: حدّد الكلمة ثم اضغط زرّ الرابط واكتب مسارًا يبدأ بـ / مثل /ar/services/seo-riyadh/"

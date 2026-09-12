@@ -177,8 +177,7 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
          # وتوقيت الرياض صراحةً لا توقيت جهاز الكاتب: بـlocal صار تاريخ
          # النشر يتبع مكان الكاتب لا مكان القارئ.
          "input_timezone": "Asia/Riyadh",
-         "date_format": "YYYY-MM-DD", "time_format": "HH:mm",
-         "picker_utc": False}, "default": "{{now}}"})
+         "date_format": "YYYY-MM-DD", "time_format": "HH:mm"}, "default": "{{now}}"})
     fields.append(date)
 
     lastmod = common_field("lastmod", rules["lastmod"], i18n="duplicate")
@@ -193,8 +192,7 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
          # وتوقيت الرياض صراحةً لا توقيت جهاز الكاتب: بـlocal صار تاريخ
          # النشر يتبع مكان الكاتب لا مكان القارئ.
          "input_timezone": "Asia/Riyadh",
-         "date_format": "YYYY-MM-DD", "time_format": "HH:mm",
-         "picker_utc": False})
+         "date_format": "YYYY-MM-DD", "time_format": "HH:mm"})
     fields.append(lastmod)
 
     draft = common_field("draft", rules["draft"], i18n="duplicate")
@@ -269,7 +267,12 @@ def build_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
             "bulleted-list", "numbered-list",
             "quote", "code", "link",
         ],
-        "modes": ["rich-text", "markdown"],
+        # ‏"rich_text" و"raw" بشرطة سفلية — لا "rich-text" ولا "markdown".
+        # المحرّر يمرّر أسماء الأوضاع عبر خريطة {rich_text, raw} ويُسقط ما
+        # ليس فيها، فكانت القائمة تخرج **فارغة**، وبلا وضع معروف يُعطَّل
+        # شريط الأدوات كله: العناوين والقوائم والاقتباس والعريض والمائل.
+        # قِيس في متصفّح حقيقي: كل زرّ ✗معطّل قبل التصحيح و✓مفعّل بعده.
+        "modes": ["rich_text", "raw"],
         "hint": (
             "العناوين تبدأ من «عنوان 2» — «عنوان 1» هو عنوان المقال ويضعه "
             "الموقع تلقائيًّا. للربط الداخلي: حدّد الكلمة ثم اضغط زرّ الرابط "
