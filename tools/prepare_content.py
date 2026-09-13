@@ -10,7 +10,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import shutil
 import sys
 import uuid
@@ -59,6 +61,56 @@ def bundle_is_archived(bundle: Path) -> bool:
     return states == {True}
 
 
+def localise_lone_language_resources(bundle: Path) -> int:
+    """يمنح موارد الحزمة أحاديّة اللغة لاحقةَ تلك اللغة.
+
+    ‏Hugo ينسب المورد الذي لا يحمل لاحقة لغة إلى اللغة الافتراضية. وحين
+    لا تكون للحزمة صفحة بتلك اللغة — مقال عربي وحده مثلًا — يبقى المورد
+    بلا صفحة تملكه، فلا تراه الصفحة العربية:
+
+      • صورة داخل النصّ → يسقط البناء كلّه عند خطّاف render-image.
+      • صورة المشاركة  → تسقط بصمت إلى صورة الموقع الافتراضية، فتخرج
+        بطاقة المشاركة بصورة غير صورة المقال ولا يعرف أحد.
+
+    أُثبت محليًّا على Hugo 0.164.0: بإعادة تسمية صورة واحدة إلى
+    ‏«‎….ar.webp» اختفى خطؤها وحدها وبقيت أخطاء البقيّة.
+
+    والحزمة ثنائية اللغة لا تُمسّ: صفحتها الإنجليزية تملك الموارد
+    وتشاركها العربية، وإضافة لاحقة هناك تكسر المشاركة.
+
+    يعمل على النسخة المجهَّزة لا على مستودع المحتوى، فلا يتغيّر اسم
+    ملف عند الكاتب.
+    """
+    indexes = sorted(bundle.glob("index.*.md"))
+    langs = {path.name.split(".")[1] for path in indexes}
+    default_lang = json.loads(
+        (ROOT / "controls" / "schema.json").read_text(encoding="utf-8")
+    )["languages"]["default"]
+    if default_lang in langs or len(langs) != 1:
+        return 0
+
+    lang = next(iter(langs))
+    known = langs | {"en", "ar"}
+    renamed: dict[str, str] = {}
+    for item in sorted(bundle.iterdir()):
+        if not item.is_file() or item.name.startswith("index."):
+            continue
+        stem, _, ext = item.name.rpartition(".")
+        if not ext or stem.rpartition(".")[2] in known:
+            continue
+        new_name = f"{stem}.{lang}.{ext}"
+        item.rename(bundle / new_name)
+        renamed[item.name] = new_name
+
+    if renamed:
+        for index in indexes:
+            text = index.read_text(encoding="utf-8")
+            for old, new in renamed.items():
+                text = text.replace(old, new)
+            index.write_text(text, encoding="utf-8")
+    return len(renamed)
+
+
 def prepare(source: Path) -> tuple[int, int]:
     reject_symlinks(source)
     source = source.resolve()
@@ -91,6 +143,7 @@ def prepare(source: Path) -> tuple[int, int]:
                     archived += 1
                     continue
                 shutil.copytree(bundle, staging / bundle.name)
+                localise_lone_language_resources(staging / bundle.name)
                 copied += 1
 
         (staging / MARKER).write_text(
