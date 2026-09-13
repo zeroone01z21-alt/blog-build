@@ -227,6 +227,15 @@ def check_file(path, schema, problems):
         (len(m.group(1)), m.group(2).strip())
         for m in re.finditer(r"(?m)^(#{1,6})\s+(.*)$", body)
     ]
+    # العنوان الفارغ لا يُنتج نصًّا، لكنه يُنتج وسم h فارغًا يرفضه فحص
+    # SEO عند آخر خطوة في البناء — بعد Hugo وبعد الصور. ورسالته هناك
+    # «h3 فارغ» بلا اسم ملف ولا رقم سطر. فيُمسك هنا بدلها، وللكاتب
+    # رسالة تقول أين هو. حدث في 2026-09-13: «### » يتيمة بين عنوان
+    # الأسئلة الشائعة وأوّل سؤال أوقفت نشر مقال جاهز.
+    for line_no, line in enumerate(body.splitlines(), start=1):
+        if re.match(r"^#{1,6}\s*$", line):
+            bad(f"عنوان فارغ في السطر {line_no} — احذفه أو اكتب نصّه.")
+
     for level, text in headings:
         if level == 1:
             bad(f"«{text[:40]}» عنوان من الدرجة الأولى (#). عنوان المقال "
