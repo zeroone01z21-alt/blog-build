@@ -62,13 +62,22 @@ def find_pages(root):
 
 
 def main():
-    out = sys.argv[1] if len(sys.argv) > 1 else "public"
+    # --json-out: المشكلات نفسها منظّمةً مع مسار الصفحة أو الصورة، كي ينسب
+    # بنّاء المدونة تجاوزًا في صفحة مقال إلى مقاله. المخرج النصّي لا يتغيّر.
+    args = sys.argv[1:]
+    json_out = None
+    if "--json-out" in args:
+        at = args.index("--json-out")
+        json_out = args[at + 1] if at + 1 < len(args) else None
+        del args[at:at + 2]
+    out = args[0] if args else "public"
     if not os.path.isdir(out):
         print(f"  لا يوجد مجلد بناء: {out}")
         return 1
 
     caps = budgets()
     problems, warnings = [], []
+    located = []          # (المسار داخل public أو "", الرسالة)
     print(f"  القياس: {METHOD}\n")
 
     css_dir = os.path.join(out, "css")
@@ -103,6 +112,7 @@ def main():
     print(f"  CSS كامل        {css_total/1024:6.1f} / {cap/1024:5.0f} KB  {mark}")
     if css_total > cap:
         problems.append(caps["css_total"]["error_ar"].replace("{actual}", f"{css_total/1024:.1f} KB"))
+        located.append(("", problems[-1]))
 
     # 2) الخطوط لكل لغة
     cap = caps["fonts_total"]["max_bytes"]
@@ -113,6 +123,7 @@ def main():
         print(f"  {label:<14} {val/1024:6.1f} / {cap/1024:5.0f} KB  {mark}")
         if val > cap:
             problems.append(f"{label}: " + caps["fonts_total"]["error_ar"].replace("{actual}", f"{val/1024:.1f} KB"))
+            located.append(("", problems[-1]))
 
     # 3) كل صورة على حدة
     cap = caps["single_image"]["max_bytes"]
@@ -126,6 +137,7 @@ def main():
                 if size > cap:
                     problems.append(caps["single_image"]["error_ar"]
                                     .replace("{name}", f).replace("{actual}", f"{size/1024:.0f} KB"))
+                    located.append((os.path.relpath(os.path.join(base, f), out), problems[-1]))
     if biggest[0]:
         print(f"  أكبر صورة      {biggest[0]/1024:6.1f} / {cap/1024:5.0f} KB  "
               f"{'✅' if biggest[0] <= cap else '❌'}  ({biggest[1]})")
@@ -147,9 +159,15 @@ def main():
         if total > cap:
             problems.append(f"{rel}: " + caps["critical_path"]["error_ar"]
                             .replace("{actual}", f"{total/1024:.1f} KB"))
+            located.append((rel, problems[-1]))
     if worst[0]:
         print(f"  أثقل مسار حرج  {worst[0]/1024:6.1f} / {cap/1024:5.0f} KB  "
               f"{'✅' if worst[0] <= cap else '❌'}  ({worst[1]})")
+
+    if json_out:
+        with open(json_out, "w", encoding="utf-8") as fh:
+            json.dump([{"page": path.replace(os.sep, "/"), "message": message}
+                       for path, message in located], fh, ensure_ascii=False, indent=2)
 
     if warnings:
         print()

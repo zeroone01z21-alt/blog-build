@@ -22,7 +22,7 @@ concurrency:
 jobs:
   rollback:
     name: استعادة المدونة والتحقق الحي
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: أدوات المدونة
         id: checkout

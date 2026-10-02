@@ -2,6 +2,7 @@
 """تحقق من مصدر لوحة الكاتب وإعداد Sveltia المولّد."""
 from __future__ import annotations
 
+import base64
 import hashlib
 import importlib.util
 import os
@@ -15,6 +16,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ADMIN = os.path.join(ROOT, "preview", "admin")
 VENDOR = os.path.join(ADMIN, "vendor", "sveltia-cms.js")
 INDEX = os.path.join(ADMIN, "index.html")
+PANEL = os.path.join(ADMIN, "status-panel.js")
+# بلاغات النشر في اللوحة: تقرأ سجل blog-build العام وحده، ولا تحقن HTML.
+PANEL_ORIGINS = (
+    "https://api.github.com/repos/zeroone01z21-alt/blog-build",
+    "https://github.com/zeroone01z21-alt/blog-build/",
+)
+PANEL_FORBIDDEN = ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write",
+                   "eval(", "new Function", "localStorage")
 EXPECTED_VENDOR_SHA256 = "bc0fd1a08e46fc6b80d5dc4c90951bb0eeed346ce8fbadb7dd6dd230379abc03"
 EXPECTED_SRI = "sha384-mVjEYeNjgFrDMldKYRXtGqYoTQX7l0LLf7wSUABCSIcQqRQPQckldCncpzRv0zHF"
 
@@ -93,6 +102,26 @@ def validate_base_url(value: str, placeholder: str, problems: list[str]) -> bool
     return True
 
 
+def panel_problems(index: str) -> list[str]:
+    """لوحة البلاغات: بصمتها في index.html، ومصادرها، وما يُمنع فيها."""
+    if not os.path.isfile(PANEL):
+        return ["preview/admin/status-panel.js مفقود"]
+    with open(PANEL, "rb") as handle:
+        raw = handle.read()
+    sri = "sha384-" + base64.b64encode(hashlib.sha384(raw).digest()).decode()
+    found: list[str] = []
+    if f'integrity="{sri}"' not in index:
+        found.append("بصمة SRI للوحة البلاغات في index.html لا تطابق الملف")
+    source = raw.decode("utf-8")
+    for url in re.findall(r"https?://[^\s\"'`)]+", source):
+        if not url.startswith(PANEL_ORIGINS):
+            found.append(f"لوحة البلاغات تشير إلى مصدر غير مسموح: {url}")
+    for token in PANEL_FORBIDDEN:
+        if token in source:
+            found.append(f"لوحة البلاغات تستعمل «{token}» الممنوع")
+    return found
+
+
 def main() -> int:
     problems: list[str] = []
     try:
@@ -126,8 +155,9 @@ def main() -> int:
         if EXPECTED_SRI not in index:
             problems.append("SRI المثبت لـSveltia مفقود أو مختلف")
         scripts = re.findall(r'<script\b[^>]*\bsrc=["\']([^"\']+)', index, flags=re.I)
-        if scripts != ["./vendor/sveltia-cms.js"]:
-            problems.append("index.html يجب أن يحمل نسخة Sveltia المحلية وحدها")
+        if scripts != ["./vendor/sveltia-cms.js", "./status-panel.js"]:
+            problems.append("index.html يجب أن يحمل نسخة Sveltia المحلية ولوحة البلاغات وحدهما")
+        problems.extend(panel_problems(index))
         if 'content="noindex, nofollow, noarchive"' not in index:
             problems.append("وسم noindex للوحة مفقود")
 

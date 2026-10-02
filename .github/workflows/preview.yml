@@ -23,7 +23,7 @@ env:
 jobs:
   preview:
     name: بناء ورفع المعاينة
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: قوالب المدونة
@@ -155,6 +155,7 @@ jobs:
           install -m 0644 preview/index.html "$stage/index.html"
           install -m 0644 preview/admin/index.html "$stage/admin/index.html"
           install -m 0644 preview/admin/config.yml "$stage/admin/config.yml"
+          install -m 0644 preview/admin/status-panel.js "$stage/admin/status-panel.js"
           install -m 0644 preview/admin/vendor/sveltia-cms.js "$stage/admin/vendor/sveltia-cms.js"
           install -m 0644 preview/admin/vendor/SVELTIA-CMS-LICENSE.txt \
             "$stage/admin/vendor/SVELTIA-CMS-LICENSE.txt"

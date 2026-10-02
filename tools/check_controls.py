@@ -57,6 +57,10 @@ GUARDED_FILES = [
     "tools/check_budgets.py",        # يمنع تآكل الأداء
     "tools/check_content.py",        # يمنع النشر الناقص
     "tools/prepare_content.py",      # يجهز المصدر ويستبعد الحزم المؤرشفة بأمان
+    "tools/build_blog.py",           # يحجز المقال المعطوب وحده ويعيد البوابات كلها
+    "tools/blog_report.py",          # بلاغ الكاتب والمالك وإعادة تفعيل الجدولة
+    "tools/schedule_check.py",       # ينشر ما حان موعده ويعوّض الإشارات الضائعة
+    "tools/test_publishing.py",      # اختبارات ما سبق؛ تعمل في controls.yml
     "tools/generate_cms.py",         # يولّد إعداد اللوحة ودليل الكاتب من العقد
     "tools/check_cms.py",            # يثبت نسخة Sveltia وعقد لوحة الكاتب
     "tools/check_indexing.py",       # يثبت عقد الخرائط وRSS وIndexNow
