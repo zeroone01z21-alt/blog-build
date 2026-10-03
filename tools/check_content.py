@@ -87,7 +87,8 @@ def display(path):
 
 def check_file(path, schema, problems):
     rel = display(path)
-    text = open(path, encoding="utf-8").read()
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read()
     fm, body = parse_front_matter(text)
 
     def bad(msg):
@@ -250,6 +251,46 @@ def check_file(path, schema, problems):
                 f"استعمل «عنوان {previous + 1}» بدلها.")
         previous = level
 
+    check_markdown_images(path, body, bad)
+
+
+# ── صور داخل النصّ ──────────────────────────────────────────────────
+#
+# الخطّاف layouts/_default/_markup/render-image.html يُسقط بناء Hugo كلّه
+# إن أشارت صورة في النصّ إلى ملف ليس في حزمة المقال. هذا ما أوقف ستة من
+# 13 بناءً فاشلًا بين 12 و23 سبتمبر 2026، وكان يُكتشف داخل Hugo فقط، برسالة
+# بعد تجهيز كل شيء. الفحص هنا يمسكه قبل البناء، باسم الملف وبلغة الكاتب.
+#
+# المطابقة أبسط من GetMatch في Hugo عن قصد: اسم ملف داخل مجلد المقال.
+# ما يفوته هذا الفحص يُسنده بنّاء المدونة إلى مقاله من رسالة Hugo نفسها.
+MARKDOWN_IMAGE = re.compile(
+    r"!\[[^\]]*\]\(\s*(?:<([^>\n]+)>|([^\s)]+))"
+    r"(?:\s+(?:\"[^\"\n]*\"|'[^'\n]*'))?\s*\)"
+)
+FENCED_CODE = re.compile(r"(?ms)^(```|~~~).*?^\1[ \t]*$")
+INLINE_CODE = re.compile(r"`[^`\n]*`")
+
+
+def markdown_image_targets(body):
+    """وجهات صور Markdown في النص، بلا ما داخل كتل الشيفرة (لا تُعرض صورًا)."""
+    text = INLINE_CODE.sub("", FENCED_CODE.sub("", body))
+    return [m.group(1) or m.group(2) for m in MARKDOWN_IMAGE.finditer(text)]
+
+
+def check_markdown_images(path, body, bad):
+    bundle = os.path.dirname(path)
+    for target in markdown_image_targets(body):
+        if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) or target.startswith("//"):
+            bad(f"الصورة «{target[:80]}» داخل النصّ رابط خارجي. احذفها وأدرجها من "
+                "زرّ الصورة في المحرر لتُحفظ داخل مجلد المقال.")
+        elif (target.startswith(("/", "./", "../")) or "\\" in target
+              or ".." in target.split("/")):
+            bad(f"مسار الصورة «{target[:80]}» داخل النصّ غير صالح. احذفها وأعد "
+                "إدراجها من زرّ الصورة في المحرر.")
+        elif not os.path.isfile(os.path.join(bundle, target)):
+            bad(f"الصورة «{target[:80]}» داخل النصّ غير موجودة في مجلد المقال. "
+                "احذفها وأعد إدراجها من زرّ الصورة في المحرر.")
+
 
 def check_images(directory, schema, problems):
     cap = schema["bundle"]["max_image_bytes"]
@@ -275,45 +316,78 @@ def check_images(directory, schema, problems):
                                      .replace("{actual}", f"{size/1024:.0f} كيلوبايت")))
 
 
-def check_bundle_consistency(directory, problems):
-    """الـslug والتصنيفات والأرشفة عقد واحد بين ترجمات الحزمة."""
+def is_bundle(path):
+    return os.path.isdir(path) and any(
+        f.startswith("index.") and f.endswith(".md") for f in os.listdir(path))
+
+
+def bundle_dirs(directory):
+    """حزم المقالات في أيّ من التخطيطين.
+
+    المصدر يضعها في ``content/blog/<slug>/``، والنسخة المجهّزة للبناء في
+    ``content/<slug>/``. كان هذا الفحص ينظر في الأول وحده، فلم يعمل على
+    الإنتاج قط: سير البناء يفحص النسخة المجهّزة.
+    """
     blog = os.path.join(directory, "blog")
-    if not os.path.isdir(blog):
+    base = blog if os.path.isdir(blog) and not is_bundle(blog) else directory
+    for name in sorted(os.listdir(base)):
+        path = os.path.join(base, name)
+        if not name.startswith(".") and is_bundle(path):
+            yield name, path
+
+
+def check_one_bundle_consistency(name, bundle, problems):
+    """الـslug والتصنيفات والأرشفة عقد واحد بين ترجمات الحزمة."""
+    records = []
+    for filename in sorted(os.listdir(bundle)):
+        if not (filename.startswith("index.") and filename.endswith(".md")):
+            continue
+        path = os.path.join(bundle, filename)
+        with open(path, encoding="utf-8") as handle:
+            fm, _ = parse_front_matter(handle.read())
+        if fm is not None:
+            records.append((path, fm))
+    if not records:
         return
-    for name in sorted(os.listdir(blog)):
-        bundle = os.path.join(blog, name)
-        if not os.path.isdir(bundle) or name.startswith("."):
-            continue
-        records = []
-        for filename in sorted(os.listdir(bundle)):
-            if not (filename.startswith("index.") and filename.endswith(".md")):
-                continue
-            path = os.path.join(bundle, filename)
-            with open(path, encoding="utf-8") as handle:
-                fm, _ = parse_front_matter(handle.read())
-            if fm is not None:
-                records.append((path, fm))
-        if not records:
-            continue
-        first_path, first = records[0]
-        expected = {
-            "slug": first.get("slug"),
-            "archived": bool(first.get("archived", False)),
-            "categories": sorted(first.get("categories", [])),
+    first_path, first = records[0]
+    expected = {
+        "slug": first.get("slug"),
+        "archived": bool(first.get("archived", False)),
+        "categories": sorted(first.get("categories", [])),
+    }
+    if expected["slug"] != name:
+        problems.append((display(first_path),
+                         f"قيمة slug يجب أن تطابق اسم مجلد الحزمة «{name}»."))
+    for path, fm in records[1:]:
+        actual = {
+            "slug": fm.get("slug"),
+            "archived": bool(fm.get("archived", False)),
+            "categories": sorted(fm.get("categories", [])),
         }
-        if expected["slug"] != name:
-            problems.append((display(first_path),
-                             f"قيمة slug يجب أن تطابق اسم مجلد الحزمة «{name}»."))
-        for path, fm in records[1:]:
-            actual = {
-                "slug": fm.get("slug"),
-                "archived": bool(fm.get("archived", False)),
-                "categories": sorted(fm.get("categories", [])),
-            }
-            for field in expected:
-                if actual[field] != expected[field]:
-                    problems.append((display(path),
-                                     f"الحقل «{field}» يجب أن يتطابق بين كل ترجمات الحزمة."))
+        for field in expected:
+            if actual[field] != expected[field]:
+                problems.append((display(path),
+                                 f"الحقل «{field}» يجب أن يتطابق بين كل ترجمات الحزمة."))
+
+
+def check_bundle_consistency(directory, problems):
+    for name, bundle in bundle_dirs(directory):
+        check_one_bundle_consistency(name, bundle, problems)
+
+
+def check_bundle(bundle, schema):
+    """كل فحوص مقال واحد، لبنّاء المدونة: مشكلة في مقال تحجزه هو وحده.
+
+    الفحوص نفسها التي يجريها main() على الشجرة كلها، مقصورةً على الحزمة.
+    """
+    problems = []
+    name = os.path.basename(os.path.normpath(bundle))
+    for filename in sorted(os.listdir(bundle)):
+        if filename.endswith(".md"):
+            check_file(os.path.join(bundle, filename), schema, problems)
+    check_one_bundle_consistency(name, bundle, problems)
+    check_images(bundle, schema, problems)
+    return problems
 
 
 def main():

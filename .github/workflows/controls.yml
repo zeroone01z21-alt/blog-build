@@ -21,10 +21,15 @@ concurrency:
 jobs:
   fingerprint:
     name: بصمة مزانة الضوابط
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # مثبَّت ببصمة النسخة، لا بوسم متحرك — v7.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: التحقق من بصمات ملفات الضوابط
         run: python3 tools/check_controls.py
+
+      # حجز المقال وحده، والنسخة السابقة، وتوقيت الرياض، والبلاغ، والجدولة:
+      # لا شبكة ولا Hugo ولا أسرار. فشلها يمنع الدمج كالبصمة.
+      - name: اختبارات موثوقية النشر
+        run: python3 tools/test_publishing.py

@@ -1,0 +1,57 @@
+# الجدولة — ما حان موعده يُنشر، وما ضاعت إشارته يُبنى
+#
+# Hugo يتخطّى المقال المؤرَّخ في المستقبل، والبناء لا يبدأ إلا عند الحفظ.
+# فالمقال المجدول لا يظهر أبدًا ما لم يحفظ أحد شيئًا بعد موعده — هكذا بقي
+# مقال 16 سبتمبر 2026 خارج الموقع. وإن ضاعت إشارة حفظ (رمز منتهٍ، عطل في
+# GitHub) لم يُنشر شيء ولم يعلم أحد.
+#
+# كل ساعة: tools/schedule_check.py يقرأ المحتوى وتاريخ تشغيلات build.yml،
+# ويطلب build.yml (بالبوابات كلها) إن حلّ موعد مقال، أو لم يُبنَ آخر محتوى،
+# أو فشل آخر بناء قبل أكثر من ساعة (ثلاث محاولات بحدّ أقصى).
+#
+# ملف مستقل عن build.yml عمدًا: GitHub يعطّل سير العمل المجدول في المستودع
+# العام بعد 60 يومًا بلا نشاط — ولو كان الجدول داخل build.yml لتعطّل النشر
+# كله معه. هنا يتعطّل الجدول وحده، ومهمة الإبلاغ في build.yml تعيد تفعيله مع
+# أول حفظة من الكاتب.
+name: schedule
+run-name: فحص المواعيد والإشارات الفائتة
+
+on:
+  schedule:
+    # الدقيقة 17 لا رأس الساعة: GitHub يؤخّر الجداول عند رؤوس الساعات.
+    - cron: '17 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blog-schedule
+  cancel-in-progress: true
+
+jobs:
+  due:
+    name: هل حان نشر شيء؟
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: أدوات المدونة
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: المحتوى
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: zeroone01z21-alt/blog-content
+          ref: main
+          path: .content-src
+          persist-credentials: false
+
+      - name: القرار والطلب
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/schedule_check.py --content .content-src --dispatch

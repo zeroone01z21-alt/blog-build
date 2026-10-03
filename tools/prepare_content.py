@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """جهّز محتوى Hugo من مستودع التحرير واستبعد الحزم المؤرشفة بالكامل.
 
+ويقرأ أرقام الساعة في date وlastmod بتوقيت الرياض (انظر «توقيت المدونة»).
+
 الاستخدام:
     python3 tools/prepare_content.py <content-source>
 
@@ -10,6 +12,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import re
@@ -18,16 +21,91 @@ import sys
 import uuid
 from pathlib import Path
 
-from check_content import parse_front_matter
+from check_content import FRONT, parse_front_matter
 
 
 ROOT = Path(__file__).resolve().parent.parent
 DESTINATION = ROOT / "content"
 MARKER = ".generated-by-prepare-content"
 
+# ── توقيت المدونة ──────────────────────────────────────────────────────
+#
+# أرقام الساعة في حقلي التاريخ تُقرأ **دائمًا بتوقيت الرياض**، والإزاحة
+# التي كتبها جهاز الكاتب تُهمَل. hugo.toml يضبط timeZone على Asia/Riyadh،
+# والرياض بلا توقيت صيفي، فالإزاحة ثابتة.
+#
+# لماذا: ثلاث مقالات متتالية (12 و16 و23 سبتمبر 2026) خرجت من اللوحة بأرقام
+# ساعة الرياض وإزاحة ‎-07:00، أي من جهاز منطقته الزمنية المحيط الهادئ
+# وساعته مضبوطة يدويًّا على الرياض. فصار كل مقال من ذلك الجهاز «مجدولًا»
+# بعد عشر ساعات، وتخطّاه Hugo بصمت: مقال 16 سبتمبر لم يُنشر قط.
+# أرقام الساعة هي ما رآه الكاتب واختاره؛ الإزاحة هي ما يجهله.
+#
+# يُطبَّق على النسخة المجهّزة وحدها؛ ملف الكاتب في blog-content لا يتغيّر.
+RIYADH_OFFSET = "+03:00"
+DATE_FIELDS = ("date", "lastmod")
+DATE_VALUE = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})"
+    r"(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?"
+    r"\s*(Z|[+-]\d{2}(?::?\d{2})?)?$"
+)
+DATE_LINE = re.compile(
+    r"(?m)^(" + "|".join(DATE_FIELDS) + r"):[ \t]*([\"']?)([^\"'\n]*?)\2[ \t]*$"
+)
+
 
 class PrepareError(RuntimeError):
     pass
+
+
+class BundleProblem(PrepareError):
+    """مشكلة في مقال واحد يصلحها الكاتب، لا في المحتوى كله.
+
+    الرسالة موجّهة للكاتب. في الوضع الصارم (سطر الأوامر والمعاينة) تُرفع
+    كما كانت؛ وبنّاء المدونة يسجّلها ويحجز المقال وحده.
+    """
+
+
+def riyadh_wall_clock(raw: str) -> tuple[str, str] | None:
+    """('2026-09-16T10:07:00+03:00', '-07:00') — أو None لقيمة غير مفهومة.
+
+    القيمة غير المفهومة تُترك كما هي ليرفضها check_content برسالته.
+    """
+    match = DATE_VALUE.match(raw.strip())
+    if not match:
+        return None
+    year, month, day, hour, minute, second, offset = match.groups()
+    try:
+        value = datetime.datetime(
+            int(year), int(month), int(day),
+            int(hour or 0), int(minute or 0), int(second or 0),
+        )
+    except ValueError:
+        return None
+    return value.strftime("%Y-%m-%dT%H:%M:%S") + RIYADH_OFFSET, offset or ""
+
+
+def normalise_dates(index: Path) -> list[dict[str, str]]:
+    """يكتب date وlastmod بأرقامهما على توقيت الرياض. يعيد ما تغيّر."""
+    text = index.read_text(encoding="utf-8")
+    front = FRONT.match(text)
+    if not front:
+        return []
+    changes: list[dict[str, str]] = []
+
+    def rewrite(match: re.Match[str]) -> str:
+        key, quote, raw = match.group(1), match.group(2), match.group(3)
+        result = riyadh_wall_clock(raw)
+        if result is None or result[0] == raw:
+            return match.group(0)
+        changes.append({"field": key, "before": raw, "after": result[0],
+                        "offset": result[1]})
+        return f"{key}: {quote}{result[0]}{quote}"
+
+    block = DATE_LINE.sub(rewrite, front.group(1))
+    if changes:
+        index.write_text(text[:front.start(1)] + block + text[front.end(1):],
+                         encoding="utf-8")
+    return changes
 
 
 def reject_symlinks(source: Path) -> None:
@@ -44,20 +122,30 @@ def reject_symlinks(source: Path) -> None:
 def front_matter(path: Path) -> dict[str, object]:
     try:
         data, _ = parse_front_matter(path.read_text(encoding="utf-8"))
-    except OSError as exc:
-        raise PrepareError(f"تعذّرت قراءة {path}") from exc
+    except (OSError, UnicodeError) as exc:
+        raise BundleProblem(
+            f"تعذّرت قراءة {path.name}. أعد حفظ المقال من اللوحة."
+        ) from exc
     if data is None:
-        raise PrepareError(f"ملف بلا front matter: {path}")
+        raise BundleProblem(
+            f"الملف {path.name} لا يبدأ بكتلة إعدادات بين سطري ---. أعد حفظه من اللوحة."
+        )
     return data
 
 
 def bundle_is_archived(bundle: Path) -> bool:
     indexes = sorted(bundle.glob("index.*.md"))
     if not indexes:
-        raise PrepareError(f"حزمة بلا index.<lang>.md: {bundle}")
+        raise BundleProblem(
+            f"مجلد المقال «{bundle.name}» بلا نصّ (index.<lang>.md) — ربما رُفعت "
+            "صورة ولم يُحفظ المقال. افتحه من اللوحة واحفظه، أو أبلغ المالك."
+        )
     states = {bool(front_matter(path).get("archived", False)) for path in indexes}
     if len(states) != 1:
-        raise PrepareError(f"حالة archived مختلفة بين ترجمات الحزمة: {bundle.name}")
+        raise BundleProblem(
+            "مفتاح «أرشفة المقال» مختلف بين ترجمتي المقال. اجعله متطابقًا في "
+            "اللغتين ثم احفظ."
+        )
     return states == {True}
 
 
@@ -111,7 +199,35 @@ def localise_lone_language_resources(bundle: Path) -> int:
     return len(renamed)
 
 
-def prepare(source: Path) -> tuple[int, int]:
+def stage_bundle(bundle: Path, destination: Path) -> dict[str, object]:
+    """ينسخ حزمة إلى مكانها المجهّز ويطبّق تحويلات التجهيز كلها.
+
+    بنّاء المدونة يستدعيها أيضًا لنسخة سابقة من مقال منشور، فتمرّ النسخة
+    السابقة بالتحويلات نفسها حرفيًّا.
+    """
+    shutil.copytree(bundle, destination)
+    renamed = localise_lone_language_resources(destination)
+    dates: list[dict[str, str]] = []
+    for index in sorted(destination.glob("index.*.md")):
+        for change in normalise_dates(index):
+            change["file"] = index.name
+            dates.append(change)
+    return {"renamed": renamed, "dates": dates}
+
+
+def prepare(
+    source: Path,
+    *,
+    problems: dict[str, list[str]] | None = None,
+    details: dict[str, dict[str, object]] | None = None,
+) -> tuple[int, int]:
+    """يجهّز content/ من المصدر.
+
+    ``problems``: إن مُرّر، تُسجَّل فيه مشكلات المقال الواحد (BundleProblem)
+    باسم مجلده ويُستبعد ذلك المقال وحده. بلا تمريره تُرفع كما كانت دائمًا.
+    ``details``: يُملأ بما جرى لكل مقال (أرشفة، تواريخ سُوّيت، صور أُعيدت تسميتها).
+    مشكلات المحتوى كله (رابط رمزي، صفحات القسم) تُرفع في الحالتين.
+    """
     reject_symlinks(source)
     source = source.resolve()
     if not source.is_dir():
@@ -139,11 +255,21 @@ def prepare(source: Path) -> tuple[int, int]:
         bundles = source / "blog"
         if bundles.is_dir():
             for bundle in sorted(p for p in bundles.iterdir() if p.is_dir() and not p.name.startswith(".")):
-                if bundle_is_archived(bundle):
-                    archived += 1
+                try:
+                    is_archived = bundle_is_archived(bundle)
+                except BundleProblem as exc:
+                    if problems is None:
+                        raise BundleProblem(f"{bundle.name}: {exc}") from exc
+                    problems.setdefault(bundle.name, []).append(str(exc))
                     continue
-                shutil.copytree(bundle, staging / bundle.name)
-                localise_lone_language_resources(staging / bundle.name)
+                if is_archived:
+                    archived += 1
+                    if details is not None:
+                        details[bundle.name] = {"archived": True}
+                    continue
+                info = stage_bundle(bundle, staging / bundle.name)
+                if details is not None:
+                    details[bundle.name] = {"archived": False, **info}
                 copied += 1
 
         (staging / MARKER).write_text(

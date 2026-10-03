@@ -476,7 +476,13 @@ def validate_server_files(public: Path, check: Check) -> None:
                       "تعليمة Header ممنوعة في .htaccess العربي")
 
 
-def report(pages: list[Page], check: Check) -> int:
+def report(pages: list[Page], check: Check, json_out: Path | None = None) -> int:
+    # --json-out: نسخة منظّمة من المشكلات نفسها، لبنّاء المدونة كي ينسب
+    # مشكلة صفحة مقال إلى مقالها. المخرج النصّي ورمز الخروج لا يتغيّران.
+    if json_out is not None:
+        json_out.write_text(json.dumps(
+            [{"page": name, "message": message} for name, message in check.problems],
+            ensure_ascii=False, indent=2), encoding="utf-8")
     if not check.problems:
         images = sum(len(page.images) for page in pages)
         print(f"  ✅ SEO سليم — {len(pages)} صفحة، {images} صورة، hreflang متبادل")
@@ -492,14 +498,19 @@ def report(pages: list[Page], check: Check) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("  الاستخدام: check_seo.py <مجلد المخرجات>")
+    args = sys.argv[1:]
+    json_out: Path | None = None
+    if len(args) == 3 and args[1] == "--json-out":
+        json_out = Path(args[2])
+        args = args[:1]
+    if len(args) != 1:
+        print("  الاستخدام: check_seo.py <مجلد المخرجات> [--json-out <ملف>]")
         return 2
-    public = Path(sys.argv[1]).resolve()
+    public = Path(args[0]).resolve()
     check = Check()
     if not public.is_dir():
         check.add(str(public), "مجلد المخرجات غير موجود")
-        return report([], check)
+        return report([], check, json_out)
 
     paths = sorted(public.rglob("*.html"))
     check.require(str(public), bool(paths), "لا توجد صفحات HTML")
@@ -520,7 +531,7 @@ def main() -> int:
     validate_reciprocal_hreflang(pages, check)
     validate_unique_metadata(pages, check)
     validate_server_files(public, check)
-    return report(pages, check)
+    return report(pages, check, json_out)
 
 
 if __name__ == "__main__":
