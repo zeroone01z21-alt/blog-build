@@ -1,13 +1,13 @@
 {{ define "main" }}
 <div class="blog-index">
-  <section class="blog-hero" aria-labelledby="blog-title">
+  <section class="blog-hero" aria-labelledby="main-content">
     <div class="blog-hero-copy">
       <p class="eyebrow">{{ T "blogEyebrow" }}</p>
       {{- /* اسم العلامة من i18n لا مكتوبًا في القالب: الموقع يكتبه
              «من الصفر إلى الواحد» في العربية، والمدونة تتبعه.
              dir="ltr" للاتينية وحدها — النصّ العربي يرث اتجاه الصفحة. */ -}}
       {{- $brand := T "brandName" -}}
-      <h1 id="blog-title">
+      <h1 id="main-content" tabindex="-1">
         {{- if eq .Lang "ar" -}}
           <span>{{ T "blog" }}</span>{{ print " " }}<span class="blog-title-brand">{{ $brand }}</span>
         {{- else -}}

@@ -6,7 +6,7 @@
       {{- range $i, $term := . }}{{ if $i }} <span aria-hidden="true">·</span> {{ end }}<a href="{{ $term.RelPermalink }}">{{ $term.LinkTitle }}</a>{{ end -}}
     </p>
     {{- end }}
-    <h1>{{ .Title }}</h1>
+    <h1 id="main-content" tabindex="-1">{{ .Title }}</h1>
     <p class="post-meta">
       <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
       <span aria-hidden="true">·</span>
