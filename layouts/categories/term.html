@@ -2,7 +2,7 @@
 <div class="blog-index category-archive">
   <header class="archive-head">
     <p class="eyebrow">{{ T "category" }}</p>
-    <h1>{{ .Title }}</h1>
+    <h1 id="main-content" tabindex="-1">{{ .Title }}</h1>
     {{- with .Params.intro }}<p class="blog-intro category-intro">{{ . }}</p>{{ end }}
   </header>
   {{- $posts := where .Pages "Params.archived" "ne" true }}

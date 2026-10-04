@@ -1,7 +1,7 @@
 {{ define "main" }}
 <div class="notfound">
   <p class="code">404</p>
-  <h1>{{ T "notFound" }}</h1>
+  <h1 id="main-content" tabindex="-1">{{ T "notFound" }}</h1>
   <p>{{ T "notFoundMsg" }}</p>
   <p><a class="button button-primary" href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "allPosts" }}</a></p>
 </div>
