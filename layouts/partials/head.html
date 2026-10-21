@@ -137,6 +137,16 @@
 {{ partial "analytics.html" . }}
 
 {{/* بيانات منظّمة: Article + BreadcrumbList، مربوطة بكيان المنظمة على الموقع */}}
+{{- /*
+  الكيان يُكتب كاملًا لا بمعرّفه وحده: عقدة #organization معرّفة في صفحات
+  الموقع لا في المدونة، وجوجل يقرأ كل صفحة وحدها فيرى كاتبًا بلا اسم. القيم
+  نفسها في عقدة الموقع (الاسم والرابط والشعار).
+  ورئيسية المسار بلغة الصفحة: المقال العربي كان يشير إلى الرئيسية والمدونة
+  الإنجليزيتين باسم عربي (7 مقالات، 2026-10-19).
+*/ -}}
+{{- $org := dict "@type" "Organization" "@id" .Site.Params.organizationId "name" .Site.Params.organization "url" "https://zero2one.sa/" -}}
+{{- $orgPublisher := merge $org (dict "logo" (dict "@type" "ImageObject" "url" "https://zero2one.sa/assets/icons/logo-z2o.webp")) -}}
+{{- $siteHome := cond (eq .Lang "ar") "https://zero2one.sa/ar/" "https://zero2one.sa/" -}}
 {{- if $isPost }}
 <script type="application/ld+json">
 {{ dict
@@ -149,8 +159,8 @@
   "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00")
   "inLanguage" .Lang
   "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink)
-  "author" (dict "@id" .Site.Params.organizationId)
-  "publisher" (dict "@id" .Site.Params.organizationId)
+  "author" $org
+  "publisher" $orgPublisher
   | jsonify (dict "indent" "  ") | safeJS }}
 </script>
 <script type="application/ld+json">
@@ -158,8 +168,8 @@
   "@context" "https://schema.org"
   "@type" "BreadcrumbList"
   "itemListElement" (slice
-    (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" "https://zero2one.sa/")
-    (dict "@type" "ListItem" "position" 2 "name" .Site.Title "item" (printf "%s" .Site.BaseURL))
+    (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" $siteHome)
+    (dict "@type" "ListItem" "position" 2 "name" .Site.Title "item" .Site.Home.Permalink)
     (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink))
   | jsonify (dict "indent" "  ") | safeJS }}
 </script>
@@ -178,11 +188,11 @@
   "description" ($desc | plainify | truncate 160 "")
   "inLanguage" .Lang
   "isPartOf" (dict "@type" "Blog" "@id" .Site.Home.Permalink "url" .Site.Home.Permalink)
-  "publisher" (dict "@id" .Site.Params.organizationId)
+  "publisher" $orgPublisher
   | jsonify (dict "indent" "  ") | safeJS }}
 </script>
 {{- $collectionBreadcrumbs := slice
-  (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" "https://zero2one.sa/")
+  (dict "@type" "ListItem" "position" 1 "name" .Site.Params.organization "item" $siteHome)
   (dict "@type" "ListItem" "position" 2 "name" .Site.Title "item" .Site.Home.Permalink)
 -}}
 {{- if not .IsHome }}
