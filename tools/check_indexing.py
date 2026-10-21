@@ -168,6 +168,16 @@ def validate_language_sitemap(
                           f"رابط عربي في خريطة الإنجليزية: {location}")
             check.require(not location.startswith(f'{config["url_prefix"]}en/'),
                           f"بادئة /en/ غير مسموحة للصفحات الإنجليزية: {location}")
+        # الخريطة تقول «افهرس»؛ noindex في الصفحة نفسها يقول العكس. دخلتها ستة
+        # تصنيفات فارغة حتى 2026-10، فصار التناقض عطلًا يوقف النشر لا ملاحظة.
+        if location.startswith(config["url_prefix"]):
+            page_file = path.parent / location[len(config["url_prefix"]):] / "index.html"
+            if page_file.is_file():
+                robots = re.search(
+                    r'<meta\s+name=["\']?robots["\']?\s+content=["\']?([^"\'>]*)',
+                    page_file.read_text(encoding="utf-8", errors="replace"), re.I)
+                check.require(not (robots and "noindex" in robots.group(1).lower()),
+                              f"صفحة noindex داخل الخريطة: {location}")
 
         alternates: dict[str, str] = {}
         for link in node.findall(f"{{{XHTML_NS}}}link"):

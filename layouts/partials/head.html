@@ -49,7 +49,7 @@
   فلا يبقى `noindex` منسيًّا على صفحة صارت ذات قيمة.
   `follow` لا `nofollow`: الروابط منها إلى الخدمات وصفحة التواصل تبقى نافذة.
 */ -}}
-{{- $emptySection := and (or .IsHome (eq .Kind "section") (eq .Kind "term")) (eq (len .RegularPagesRecursive) 0) -}}
+{{- $emptySection := partial "empty-listing.html" . -}}
 {{- if $isPreview }}
 <meta name="robots" content="noindex, nofollow, noarchive">
 {{- else if $is404 }}
@@ -61,10 +61,18 @@
 
 {{/* الصفحة الحالية دائمًا hreflang ذاتي، حتى لو كان المقال بلغة واحدة فقط. */}}
 <link rel="alternate" hreflang="{{ .Lang }}" href="{{ .Permalink }}">
-{{- range .Translations }}
+{{- /*
+  لا بديل لغوي من قائمة فارغة ولا إليها: عليها noindex، وجوجل يُسقط من
+  مجموعة البدائل كل صفحة ممنوعة. تصنيف عربي مفهرس أشار سابقًا إلى نظيره
+  الإنجليزي الفارغ (en وx-default معًا). إن صار للقائمة مقال عاد الربط تلقائيًّا.
+*/ -}}
+{{- if not $emptySection }}
+{{- range .Translations }}{{ if not (partial "empty-listing.html" .) }}
 <link rel="alternate" hreflang="{{ .Lang }}" href="{{ .Permalink }}">
+{{- end }}{{ end }}
 {{- end }}
-{{- $en := "" }}{{ range .AllTranslations }}{{ if eq .Lang "en" }}{{ $en = .Permalink }}{{ end }}{{ end }}
+{{- $en := cond (eq .Lang "en") .Permalink "" }}
+{{- if and (ne .Lang "en") (not $emptySection) }}{{ range .Translations }}{{ if and (eq .Lang "en") (not (partial "empty-listing.html" .)) }}{{ $en = .Permalink }}{{ end }}{{ end }}{{ end }}
 {{- if $en }}
 <link rel="alternate" hreflang="x-default" href="{{ $en }}">
 {{- end }}
