@@ -78,9 +78,16 @@ def lang_switch(block):
     الحلّ أن يُستبدل المسار بتعبير Hugo يُنفَّذ في كل صفحة: نظير الصفحة
     الحالية إن كان له ترجمة، وإلا جذر المدونة باللغة الأخرى — لا صفحة
     من الموقع لا صلة لها بما يقرأ.
+
+    ‏`.Translations` لا `.AllTranslations`: الثانية تضم الصفحة نفسها فلا تكون
+    فارغة أبدًا، فلم يصل التعبير إلى فرع `else` قط. مقال عربي بلا ترجمة خرج
+    بـ href فارغ، فأعاد زرّ English تحميل المقال نفسه (6 مقالات، 2026-10-19).
+    والنظير الذي هو قائمة فارغة (partials/empty-listing.html) لا يُعدّ نظيرًا:
+    تصنيف عربي فيه مقالات لا يرسل زائره إلى صفحة إنجليزية بلا مقال.
     """
-    expr = ('{{ with $.AllTranslations }}'
-            '{{ range . }}{{ if ne .Lang $.Lang }}{{ .RelPermalink }}{{ end }}{{ end }}'
+    expr = ('{{ $other := "" }}{{ range $.Translations }}'
+            '{{ if not (partial "empty-listing.html" .) }}{{ $other = .RelPermalink }}{{ end }}{{ end }}'
+            '{{ with $other }}{{ . }}'
             '{{ else }}{{ if eq $.Lang "ar" }}/blog/{{ else }}/blog/ar/{{ end }}{{ end }}')
     def swap(m):
         return m.group(1) + expr + m.group(3)

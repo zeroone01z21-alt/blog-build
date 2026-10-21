@@ -1,17 +1,18 @@
 {{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
+{{- /* القوائم الفارغة عليها noindex (partials/empty-listing.html)؛ الخريطة لا تعرضها ولا تربط بها. */ -}}
 {{- range .Data.Pages }}
-  {{- if ne .Kind "404" }}
+  {{- if and (ne .Kind "404") (not (partial "empty-listing.html" .)) }}
   <url>
     <loc>{{ .Permalink }}</loc>
     {{- with .Lastmod }}
     <lastmod>{{ .Format "2006-01-02T15:04:05Z07:00" }}</lastmod>
     {{- end }}
     <xhtml:link rel="alternate" hreflang="{{ .Lang }}" href="{{ .Permalink }}" />
-    {{- range .Translations }}
+    {{- range .Translations }}{{ if not (partial "empty-listing.html" .) }}
     <xhtml:link rel="alternate" hreflang="{{ .Lang }}" href="{{ .Permalink }}" />
-    {{- end }}
+    {{- end }}{{ end }}
   </url>
   {{- end }}
 {{- end }}
