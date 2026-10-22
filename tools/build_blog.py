@@ -231,6 +231,8 @@ class Builder:
                 if change.get("offset", "") not in DEVICE_OFFSETS_OK:
                     art.notes.append(
                         f"device-offset:{change['field']}:{change['before']}→{change['after']}")
+            for repair in info.get("tables", []):
+                art.notes.append(f"table-delimiter:{repair['file']}:{repair['line']}")
             for message in prepare_problems.get(name, []):
                 art.problem("prepare", message)
             if self.site_blog is not None:

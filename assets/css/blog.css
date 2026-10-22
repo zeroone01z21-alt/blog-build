@@ -435,13 +435,37 @@ html[dir="rtl"] .empty-state h2 { letter-spacing: 0; line-height: 1.35; }
 .category-grid p { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
 .category-grid span { margin-block-start: auto; color: var(--orange-text); font-size: .76rem; font-weight: 700; }
 
-/* Article */
-.post,
+/* Article
+   المقال بطاقةٌ منفصلة وبجانبها عمود جانبي (طلب العميل، 2026-10-22).
+   عمود القراءة داخل البطاقة يبقى بعرض --measure نفسه. تحت 64rem يأتي
+   العمود الجانبي بعد المقال، وعلى الجوال تسقط البطاقة (انظر آخر الملف). */
 .notfound {
   width: calc(100% - (2 * var(--page-pad)));
   max-width: var(--measure);
   margin-inline: auto;
   padding-block: clamp(3rem, 7vw, 7rem);
+}
+
+.post-layout {
+  --aside: clamp(17rem, 22vw, 20rem);
+  --aside-gap: clamp(1.5rem, 2.5vw, 2.5rem);
+  --card-pad: clamp(1.5rem, 3.5vw, 3rem);
+  width: calc(100% - (2 * var(--page-pad)));
+  max-width: calc(var(--measure) + 2 * var(--card-pad) + var(--aside-gap) + var(--aside));
+  margin-inline: auto;
+  padding-block: clamp(3rem, 7vw, 7rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--aside);
+  align-items: start;
+  gap: var(--aside-gap);
+}
+
+.post {
+  min-width: 0;
+  padding: var(--card-pad);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--line), 0 1.5rem 3rem -2.5rem rgb(28 29 32 / 30%);
 }
 
 .post-head h1 {
@@ -478,10 +502,29 @@ html[dir="rtl"] .post-head h1 { letter-spacing: 0; line-height: 1.35; }
 html[dir="rtl"] .post-body p,
 html[dir="rtl"] .post-body li { line-height: 2; }
 .post-body h2 { margin: 2.75rem 0 .75rem; font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
-.post-body h3 { margin: 2rem 0 .6rem; font-size: 1.25rem; line-height: 1.3; }
+/* H3 كان بحجم النص تقريبًا (20 مقابل 17 بكسل) وبسماكته ولونه، فلا يُرى
+   عنوانًا. صار أعرض وبلون الهوية؛ H2 يبقى بخط الموقع العادي. */
+.post-body h3 {
+  margin: 2.2rem 0 .6rem;
+  color: var(--orange-text);
+  font-size: clamp(1.3rem, 1.05rem + .7vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.post-body h4 { margin: 1.8rem 0 .5rem; font-size: 1.1rem; font-weight: 700; line-height: 1.45; }
+html[dir="rtl"] .post-body h2 { line-height: 1.45; }
+html[dir="rtl"] .post-body h3 { line-height: 1.6; }
+/* مسافة فوق العنوان حين يُقفز إليه من «محتويات المقالة» */
+.post-body h2,
+.post-body h3 { scroll-margin-top: 6rem; }
 .post-body ul,
 .post-body ol { margin: 0 0 1.2rem; padding-inline-start: 1.4rem; }
+/* CSS الموقع يلغي النقاط على li نفسه لا على ul، فتُعاد على li. */
+.post-body ul > li { list-style: disc; }
+.post-body ul ul > li { list-style: circle; }
+.post-body ol > li { list-style: decimal; }
 .post-body li { margin-block-end: .4rem; }
+.post-body li::marker { color: var(--orange-text); font-weight: 700; }
 .post-body a { color: var(--orange-text); text-underline-offset: .18em; }
 .post-body blockquote {
   margin: 1.75rem 0;
@@ -499,11 +542,117 @@ html[dir="rtl"] .post-body li { line-height: 2; }
 .post-body pre { overflow-x: auto; padding: 1rem; border-radius: .75rem; background: var(--ink); color: var(--cream); }
 .post-body pre code { padding: 0; background: none; }
 .post-body img { margin: 1.75rem 0; border-radius: 1rem; }
-.post-body table { width: 100%; margin: 1.75rem 0; display: block; overflow-x: auto; border-collapse: collapse; }
-.post-body th,
-.post-body td { padding: .55rem .75rem; border: 1px solid var(--line); text-align: start; }
+/* الجدول داخل غلاف يمرَّر أفقيًّا على الشاشة الضيّقة (_markup/render-table.html) */
+.post-table {
+  margin: 1.75rem 0;
+  overflow-x: auto;
+  border-radius: 1rem;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.post-table table { width: 100%; border-collapse: collapse; font-size: .95em; }
+.post-table th,
+.post-table td {
+  /* ثلاث خانات تتّسع في 342px؛ الأكثر يُمرَّر أفقيًّا داخل الغلاف */
+  min-width: 6.5rem;
+  padding: .7rem .95rem;
+  border-block-end: 1px solid var(--line);
+  line-height: 1.7;
+  text-align: start;
+  vertical-align: top;
+}
+.post-table th + th,
+.post-table td + td { border-inline-start: 1px solid var(--line); }
+.post-table th { background: color-mix(in srgb, var(--orange) 10%, #fff); font-weight: 700; }
+.post-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.post-table tbody tr:last-child td { border-block-end: 0; }
 .post-back { margin-block-start: 3.5rem; padding-block-start: 1.5rem; border-block-start: 1px solid var(--line); }
 .post-back a { color: var(--orange-text); text-decoration: none; }
+/* في صفحة المقال تحت المقال وحده؛ فجوة الشبكة هي المسافة (والتصنيف يبقى كما كان) */
+.post-layout > .post-back { grid-column: 1; margin: 0; }
+
+/* محتويات المقالة (partials/post-toc.html) */
+.post-toc {
+  margin: 0 0 2.5rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--cream) 65%, #fff);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.post-toc-summary {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+.post-toc-summary::-webkit-details-marker { display: none; }
+/* سهم بخصائص فيزيائية عمدًا: يشير إلى الأسفل في الاتجاهين */
+.post-toc-summary::after {
+  content: '';
+  width: .55rem;
+  height: .55rem;
+  margin-inline-start: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-.15rem) rotate(45deg);
+  transition: transform .25s var(--ease);
+}
+.post-toc[open] > .post-toc-summary::after { transform: translateY(.1rem) rotate(-135deg); }
+.post-toc-count {
+  min-width: 1.6rem;
+  padding: .05rem .45rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--cream);
+  font-size: .72rem;
+  text-align: center;
+}
+.post-toc-nav { padding: 0 1.25rem 1.1rem; }
+.post-toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+.post-toc ol ol { padding-inline-start: 1.5rem; }
+.post-toc li { counter-increment: toc; }
+.post-toc li li { font-size: .93em; }
+.post-toc a { display: inline-block; padding-block: .25rem; line-height: 1.65; text-decoration: none; }
+/* «3.2» يُعرض بترتيبه في العربية بلا direction:ltr (أرقام وفاصلة بينها)؛
+   ولو وُضع ltr لصار هامش الرقم في الجهة الخطأ والتصق بالنص. */
+.post-toc a::before {
+  content: counters(toc, ".");
+  margin-inline-end: .55rem;
+  display: inline-block;
+  color: var(--orange-text);
+  font-weight: 700;
+  unicode-bidi: isolate;
+}
+.post-toc a:hover,
+.post-toc a:focus-visible { color: var(--orange-text); text-decoration: underline; text-underline-offset: .18em; }
+
+/* العمود الجانبي (partials/post-aside.html) */
+.post-aside { min-width: 0; display: grid; gap: var(--aside-gap); }
+.aside-card {
+  padding: clamp(1.25rem, 2vw, 1.6rem);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.aside-title { margin: 0 0 .7rem; font-size: 1.15rem; font-weight: 700; line-height: 1.4; }
+.aside-cta { background: var(--ink); color: var(--cream); box-shadow: none; }
+.aside-cta p { margin: 0 0 1.25rem; color: rgb(255 253 237 / 72%); font-size: .92rem; line-height: 1.7; }
+.aside-actions { display: grid; gap: .6rem; }
+.button-ghost { border-color: rgb(255 253 237 / 35%); color: var(--cream); }
+.button-ghost:hover,
+.button-ghost:focus-visible { border-color: var(--cream); background: var(--cream); color: var(--ink); }
+.aside-posts { margin: 0; padding: 0; display: grid; gap: 1rem; list-style: none; }
+.aside-posts li { padding-block-end: 1rem; border-block-end: 1px solid var(--line); }
+.aside-posts li:last-child { padding-block-end: 0; border-block-end: 0; }
+.aside-post { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); align-items: center; gap: .85rem; text-decoration: none; }
+.aside-post .responsive-picture { overflow: hidden; border-radius: .75rem; }
+.aside-thumb { aspect-ratio: 4 / 3; object-fit: cover; }
+.aside-post-text { display: grid; gap: .3rem; }
+.aside-post-title { font-size: .88rem; font-weight: 700; line-height: 1.55; }
+.aside-post:hover .aside-post-title,
+.aside-post:focus-visible .aside-post-title { color: var(--orange-text); }
+.aside-post time { color: var(--muted); font-size: .72rem; direction: ltr; unicode-bidi: isolate; justify-self: start; }
 
 /* 404 */
 .notfound { padding-block: clamp(4rem, 10vw, 9rem); text-align: center; }
@@ -524,6 +673,21 @@ html[dir="rtl"] .post-body li { line-height: 2; }
 
    الحدود مختارة من المحتوى لا من أسماء الأجهزة: البطاقة تحتاج ~17rem
    لتُقرأ، فعمودان يحتاجان ~36rem و ثلاثة ~54rem مع الفجوات والحشو. */
+
+/* ── أقل من 64rem: العمود الجانبي ينزل بعد المقال ──
+   عمود 17rem بجانب بطاقة المقال لا يترك للقراءة إلا ~32rem على 1000px.
+   تحته البطاقتان جنبًا إلى جنب ما اتّسعتا، وإلا فواحدة فوق الأخرى. */
+@media (max-width: 64rem) {
+   .post-layout {
+      max-width: calc(var(--measure) + 2 * var(--card-pad));
+      grid-template-columns: minmax(0, 1fr);
+   }
+
+   .post-aside {
+      grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+      align-items: start;
+   }
+}
 
 /* ── لوحي وأصغر: عمودان ── */
 @media (max-width: 54rem) {
@@ -565,4 +729,17 @@ html[dir="rtl"] .post-body li { line-height: 2; }
    .archive-head h1 {
       font-size: clamp(2.2rem, 11vw, 3.4rem);
    }
+
+   /* بطاقة المقال على 390px تأكل 48px من عمود 342px؛ النص على الخلفية
+      مباشرة كما كان، وبطاقتا العمود الجانبي تبقيان بطاقتين. */
+   .post {
+      padding: 0;
+      border-radius: 0;
+      background: none;
+      box-shadow: none;
+   }
+
+   .post-table table { font-size: .88em; }
+   .post-table th,
+   .post-table td { padding: .6rem .65rem; }
 }

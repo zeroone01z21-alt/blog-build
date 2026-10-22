@@ -145,6 +145,47 @@ class RiyadhTime(Sandbox):
         self.assertEqual(prepare_content.RIYADH_OFFSET, "+03:00")
 
 
+# ── الجداول بلا سطر فاصل ────────────────────────────────────────────────
+class Tables(Sandbox):
+    def repaired(self, body: str) -> tuple[str, list]:
+        path = self.tmp / "index.ar.md"
+        path.write_text(article("t", body=body), encoding="utf-8")
+        changes = prepare_content.repair_tables(path)
+        return path.read_text(encoding="utf-8").split("---\n", 2)[2], changes
+
+    def test_missing_delimiter_is_added_under_the_header(self) -> None:
+        body, changes = self.repaired("نص\n\n| **المعيار** | التقليدي |\n| القنوات | الصحف |\n| القياس | تقديري |\n\nبعد\n")
+        self.assertEqual(body, "نص\n\n| **المعيار** | التقليدي |\n| --- | --- |\n"
+                               "| القنوات | الصحف |\n| القياس | تقديري |\n\nبعد\n")
+        self.assertEqual([c["columns"] for c in changes], [2])
+        self.assertEqual(changes[0]["line"], 15, "رقم السطر في ملف الكاتب")
+
+    def test_complete_tables_and_code_stay(self) -> None:
+        for body in ("| a | b |\n|:--|--:|\n| 1 | 2 |\n",
+                     "```\n| a | b |\n| 1 | 2 |\n```\n",
+                     "| سطر وحيد |\n",
+                     "| a | b |\n| 1 | 2 | 3 |\n",
+                     "| a \\| b | c |\n|---|---|\n"):
+            self.assertEqual(self.repaired(body), (body, []), body)
+
+    def test_escaped_pipes_are_not_columns(self) -> None:
+        body, changes = self.repaired("| a \\| b | c |\n| 1 | 2 |\n")
+        self.assertEqual(body, "| a \\| b | c |\n| --- | --- |\n| 1 | 2 |\n")
+        self.assertEqual(changes[0]["columns"], 2)
+
+    def test_repair_is_idempotent_and_source_stays(self) -> None:
+        repo = self.content_repo()
+        source = write_bundle(repo / "content" / "blog", "tbl",
+                              article("tbl", body="| a | b |\n| 1 | 2 |\n"))
+        details: dict = {}
+        prepare_content.prepare(repo / "content", details=details)
+        staged = self.tmp / "content" / "tbl" / "index.ar.md"
+        self.assertIn("| a | b |\n| --- | --- |\n| 1 | 2 |", staged.read_text(encoding="utf-8"))
+        self.assertNotIn("---|", (source / "index.ar.md").read_text(encoding="utf-8"))
+        self.assertEqual(details["tbl"]["tables"], [{"file": "index.ar.md", "line": 13, "columns": 2}])
+        self.assertEqual(prepare_content.repair_tables(staged), [], "الإصلاح ثابت")
+
+
 # ── صور النص والاتساق ───────────────────────────────────────────────────
 class ContentChecks(Sandbox):
     def test_markdown_image_targets_skip_code(self) -> None:

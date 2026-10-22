@@ -125,3 +125,25 @@ other = "Quick links"
 
 [brandName]
 other = "ZERO 2 ONE"
+
+# Article page: contents and side column (2026-10-22)
+[tocTitle]
+other = "Contents"
+
+[asideLabel]
+other = "Consultation and related articles"
+
+[ctaTitle]
+other = "Your free consultation with ZERO\u00A02\u00A0ONE"
+
+[ctaText]
+other = "Talk to our experts and get a free consultation."
+
+[ctaWhatsapp]
+other = "Message us on WhatsApp"
+
+[relatedTitle]
+other = "Related articles"
+
+[tableLabel]
+other = "Table"

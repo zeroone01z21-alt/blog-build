@@ -1,0 +1,52 @@
+{{- /*
+  العمود الجانبي للمقال: بطاقة استشارة، ثم مقالات ذات صلة.
+
+  النص من تعليق كيرلس على عرض العميل (2026-10-18). ضغطة واتساب تُحسب
+  «عميلًا محتملًا» في GA4 وAds بلا شيء هنا: initLeadTracking في سكربت
+  الموقع يلتقط كل رابط wa.me في الصفحة.
+
+  المقالات من التصنيف نفسه أولًا، ثم الأحدث من اللغة نفسها حتى أربعة:
+  في أكتوبر 2026 كل تصنيف فيه بين مقال وأربعة، فالتصنيف وحده يترك القائمة
+  فارغة في أغلب المقالات.
+*/ -}}
+{{- $ar := eq .Lang "ar" -}}
+{{- $pages := where .Site.RegularPages "Permalink" "ne" .Permalink -}}
+{{- $same := where $pages "Params.categories" "intersect" (.Params.categories | default slice) -}}
+{{- $related := first 4 ($same | append (complement $same $pages)) -}}
+<aside class="post-aside" aria-label="{{ T "asideLabel" }}">
+  <section class="aside-card aside-cta">
+    <h2 class="aside-title">{{ T "ctaTitle" }}</h2>
+    <p>{{ T "ctaText" }}</p>
+    <div class="aside-actions">
+      <a class="button button-primary" href="https://wa.me/966530307054" target="_blank" rel="noopener">{{ T "ctaWhatsapp" }}</a>
+      <a class="button button-ghost" href="{{ cond $ar "/ar/contact/" "/contact/" }}">{{ T "contact" }}</a>
+    </div>
+  </section>
+  {{- with $related }}
+  <section class="aside-card aside-related">
+    <h2 class="aside-title">{{ T "relatedTitle" }}</h2>
+    <ul class="aside-posts">
+      {{- range . }}
+      {{- $post := . }}
+      <li>
+        <a class="aside-post" href="{{ .RelPermalink }}">
+          {{- with .Params.featured_image }}{{ with $post.Resources.GetMatch . }}
+            {{- partial "responsive-image.html" (dict
+              "image" .
+              "class" "aside-thumb"
+              "loading" "lazy"
+              "sizes" "6rem"
+              "widths" (slice 192 384)
+            ) }}
+          {{- end }}{{ end }}
+          <span class="aside-post-text">
+            <span class="aside-post-title">{{ .Title }}</span>
+            <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+          </span>
+        </a>
+      </li>
+      {{- end }}
+    </ul>
+  </section>
+  {{- end }}
+</aside>

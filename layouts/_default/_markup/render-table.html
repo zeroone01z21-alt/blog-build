@@ -1,0 +1,27 @@
+{{- /*
+  جدول نص المقال داخل غلاف يُمرَّر أفقيًّا: جدول من ثلاث خانات عربية لا
+  يتّسع في 342px. الغلاف قابل للتركيز ليُمرَّر بلوحة المفاتيح أيضًا.
+  الجدول الذي ينقصه سطره الفاصل يكمله tools/prepare_content.py قبل Hugo.
+*/ -}}
+<div class="post-table" role="region" aria-label="{{ T "tableLabel" }}" tabindex="0">
+<table>
+  <thead>
+    {{- range .THead }}
+    <tr>
+      {{- range . }}
+      <th{{ with .Alignment }} style="text-align: {{ . }}"{{ end }}>{{ .Text }}</th>
+      {{- end }}
+    </tr>
+    {{- end }}
+  </thead>
+  <tbody>
+    {{- range .TBody }}
+    <tr>
+      {{- range . }}
+      <td{{ with .Alignment }} style="text-align: {{ . }}"{{ end }}>{{ .Text }}</td>
+      {{- end }}
+    </tr>
+    {{- end }}
+  </tbody>
+</table>
+</div>
