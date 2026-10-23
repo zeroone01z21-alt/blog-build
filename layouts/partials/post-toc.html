@@ -1,0 +1,26 @@
+{{- /*
+  «محتويات المقالة» — من «عنوان 2» و«عنوان 3» (hugo.toml: markup.tableOfContents).
+
+  يظهر لمقال فيه ثلاثة عناوين رئيسية فأكثر؛ القصير لا يحتاج فهرسًا.
+  مفتوح إن كانت عناوينه 12 فأقل، ومغلق إن زادت: مقال «أفضل شركة تسويق»
+  فيه 41 عنوانًا، وفهرسه مفتوحًا يدفع النص ألف بكسل إلى الأسفل على الجوال.
+
+  القفز إلى العنوان على الكمبيوتر يمرّ عبر سكربت الموقع: locomotive يمرّر
+  المحتوى بـtransform، فـhref="#…" وحده لا يحرّك الصفحة (قِيس على المقال
+  الحي 2026-10-22). المعالج في index-new.js على `.post a[href^="#"]`، ومعه
+  إعادة قياس الصفحة عند فتح الفهرس وإغلاقه (details.post-toc).
+*/ -}}
+{{- /* الفهرس يرقّم بنفسه (1، 3.2)؛ عنوان يبدأ برقمه («1. Define…») كان
+       يخرج «1 1. Define…». الرقم يُحذف من الفهرس وحده، والعنوان كما هو.
+       رقم أو رقمان فقط: «2026» في أول عنوان ليس ترقيمًا. */ -}}
+{{- $toc := .TableOfContents | replaceRE `(<a href="#[^"]*">)\s*[0-9٠-٩]{1,2}\s*[.)\-–]\s+` "$1" -}}
+{{- $entries := len (findRE `<li>` $toc) -}}
+{{- if ge (len (findRE `<h2[ >]` .Content)) 3 }}
+<details class="post-toc"{{ if le $entries 12 }} open{{ end }}>
+  <summary class="post-toc-summary">
+    <span class="post-toc-title">{{ T "tocTitle" }}</span>
+    <span class="post-toc-count">{{ $entries }}</span>
+  </summary>
+  {{ replace $toc `<nav id="TableOfContents">` (printf `<nav class="post-toc-nav" aria-label="%s">` (T "tocTitle")) | safeHTML }}
+</details>
+{{- end }}

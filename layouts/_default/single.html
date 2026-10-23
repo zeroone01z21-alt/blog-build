@@ -1,4 +1,10 @@
 {{ define "main" }}
+{{- /*
+  المقال في بطاقة، وبجانبها عمود جانبي: استشارة ومقالات ذات صلة (طلب
+  العميل، 2026-10-22). على الشاشات الضيّقة يأتي العمود بعد المقال، فترتيب
+  المصدر هو ترتيب القراءة على الجوال.
+*/ -}}
+<div class="post-layout">
 <article class="post">
   <header class="post-head">
     {{- with .GetTerms "categories" }}
@@ -25,12 +31,17 @@
       "class" "post-cover"
       "loading" "eager"
       "fetchpriority" "high"
-      "sizes" "(max-width: 42rem) calc(100vw - 2rem), 38rem"
+      "sizes" "(max-width: 36rem) calc(100vw - 3rem), (max-width: 64rem) 35rem, (max-width: 113rem) calc(16rem + 30vw), 50rem"
     ) }}
   {{- end }}{{ end }}
 
-  <div class="post-body">{{ .Content }}</div>
+  {{ partial "post-toc.html" . }}
 
-  <p class="post-back"><a href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "backArrow" }} {{ T "backToBlog" }}</a></p>
+  <div class="post-body">{{ .Content }}</div>
 </article>
+
+{{ partial "post-aside.html" . }}
+
+<p class="post-back"><a href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "backArrow" }} {{ T "backToBlog" }}</a></p>
+</div>
 {{ end }}

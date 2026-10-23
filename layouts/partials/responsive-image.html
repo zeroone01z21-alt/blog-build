@@ -1,6 +1,9 @@
 {{- /*
   صورة page resource متجاوبة. Hugo يولّد AVIF وWebP عند البناء ويحفظ
   المخرجات في cache، مع أصل الصورة كخيار احتياطي للمتصفحات الأقدم.
+
+  `widths` اختياري لصورة صغيرة دائمًا (مصغّرات العمود الجانبي): أكبرها هو
+  السقف. بدونه 480 و800 و1200 كما كانت.
 */ -}}
 {{- $image := .image -}}
 {{- $alt := .alt | default "" -}}
@@ -8,13 +11,15 @@
 {{- $loading := .loading | default "lazy" -}}
 {{- $sizes := .sizes | default "100vw" -}}
 {{- $fetchpriority := .fetchpriority | default "auto" -}}
+{{- $candidates := .widths | default (slice 480 800 1200) -}}
+{{- $cap := index $candidates (sub (len $candidates) 1) -}}
 
 {{- if reflect.IsImageResourceProcessable $image -}}
   {{- $widths := slice -}}
-  {{- range (slice 480 800 1200) -}}
+  {{- range $candidates -}}
     {{- if le . $image.Width }}{{ $widths = $widths | append . }}{{ end -}}
   {{- end -}}
-  {{- $maxWidth := math.Min $image.Width 1200 | int -}}
+  {{- $maxWidth := math.Min $image.Width $cap | int -}}
   {{- $widths = $widths | append $maxWidth | uniq | sort -}}
   {{- $avifSet := slice -}}
   {{- $webpSet := slice -}}
@@ -25,7 +30,7 @@
     {{- $webpSet = $webpSet | append (printf "%s %dw" $webp.RelPermalink $webp.Width) -}}
   {{- end -}}
   {{- $fallback := $image -}}
-  {{- if gt $image.Width 1200 }}{{ $fallback = $image.Resize "1200x" }}{{ end -}}
+  {{- if gt $image.Width $cap }}{{ $fallback = $image.Resize (printf "%dx" $cap) }}{{ end -}}
   <picture class="responsive-picture">
     <source type="image/avif" srcset="{{ delimit $avifSet ", " }}" sizes="{{ $sizes }}">
     <source type="image/webp" srcset="{{ delimit $webpSet ", " }}" sizes="{{ $sizes }}">

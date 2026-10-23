@@ -53,6 +53,23 @@ DATE_LINE = re.compile(
 )
 
 
+# ── الجداول ────────────────────────────────────────────────────────────
+#
+# جدول Markdown يحتاج تحت سطر عناوينه سطرًا فاصلًا (| --- | --- |)، وبدونه
+# يطبعه Hugo فقرةً واحدة من الخطوط العمودية. لوحة الكتابة بلا زرّ جدول،
+# والجداول الأربعة المنشورة حتى 2026-10-22 كلها بلا هذا السطر منذ أول حفظ.
+# نضيفه هنا تحت السطر الأول من كل كتلة أسطر تبدأ وتنتهي بـ|، إن تساوى عدد
+# خانات سطرين متتاليين منها على الأقل. على النسخة المجهّزة وحدها، كالتوقيت.
+TABLE_ROW = re.compile(r"^ {0,3}\|.*\|[ \t\r]*$")
+TABLE_DELIMITER = re.compile(r"^ {0,3}\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t\r]*$")
+CODE_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+UNESCAPED_PIPE = re.compile(r"(?<!\\)\|")
+
+
+def table_cells(row: str) -> int:
+    return len(UNESCAPED_PIPE.split(row.strip()[1:-1]))
+
+
 class PrepareError(RuntimeError):
     pass
 
@@ -105,6 +122,53 @@ def normalise_dates(index: Path) -> list[dict[str, str]]:
     if changes:
         index.write_text(text[:front.start(1)] + block + text[front.end(1):],
                          encoding="utf-8")
+    return changes
+
+
+def repair_tables(index: Path) -> list[dict[str, int]]:
+    """يضيف السطر الفاصل لجدول بلا فاصل. يعيد ما أُصلح (السطر وعدد الخانات)."""
+    text = index.read_text(encoding="utf-8")
+    front = FRONT.match(text)
+    head, body = (text[:front.end()], text[front.end():]) if front else ("", text)
+    offset = head.count("\n")
+    lines = body.split("\n")
+    out: list[str] = []
+    changes: list[dict[str, int]] = []
+    fence = ""
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        opening = CODE_FENCE.match(line)
+        if fence:
+            if opening and opening.group(1)[0] == fence[0] and len(opening.group(1)) >= len(fence):
+                fence = ""
+            out.append(line)
+            i += 1
+            continue
+        if opening:
+            fence = opening.group(1)
+            out.append(line)
+            i += 1
+            continue
+        end = i
+        while end < len(lines) and TABLE_ROW.match(lines[end]):
+            end += 1
+        block = lines[i:end]
+        if (len(block) >= 2 and not TABLE_DELIMITER.match(block[1])
+                and table_cells(block[0]) >= 2 and table_cells(block[0]) == table_cells(block[1])):
+            columns = table_cells(block[0])
+            out.extend([block[0], "|" + " --- |" * columns, *block[1:]])
+            changes.append({"line": offset + i + 1, "columns": columns})
+            i = end
+            continue
+        if block:
+            out.extend(block)
+            i = end
+            continue
+        out.append(line)
+        i += 1
+    if changes:
+        index.write_text(head + "\n".join(out), encoding="utf-8")
     return changes
 
 
@@ -208,11 +272,14 @@ def stage_bundle(bundle: Path, destination: Path) -> dict[str, object]:
     shutil.copytree(bundle, destination)
     renamed = localise_lone_language_resources(destination)
     dates: list[dict[str, str]] = []
+    tables: list[dict[str, object]] = []
     for index in sorted(destination.glob("index.*.md")):
         for change in normalise_dates(index):
             change["file"] = index.name
             dates.append(change)
-    return {"renamed": renamed, "dates": dates}
+        for repair in repair_tables(index):
+            tables.append({"file": index.name, **repair})
+    return {"renamed": renamed, "dates": dates, "tables": tables}
 
 
 def prepare(

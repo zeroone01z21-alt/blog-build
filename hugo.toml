@@ -58,6 +58,12 @@ disableDefaultSiteRedirect = true
       unsafe = false
   [markup.highlight]
     noClasses = false
+  # «محتويات المقالة» (partials/post-toc.html): «عنوان 2» و«عنوان 3» من
+  # اللوحة، مرقّمة. «عنوان 1» هو عنوان المقال فلا يدخل.
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = true
 
 [outputs]
   home = ['HTML', 'RSS']
