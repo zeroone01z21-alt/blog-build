@@ -19,13 +19,7 @@
                                 </span>
                             </a>
                         </li>
-                        <li class="btn btn-link">
-                            <a href="/services/" class="btn-click magnetic" data-strength="20" data-strength-text="10">
-                                <span class="btn-text">
-                                    <span class="btn-text-inner">Our Services</span>
-                                </span>
-                            </a>
-                        </li>
+                        <li class="rf-nav-services"><details><summary>Our Services</summary><div class="rf-services-menu"><a href="/services/web-design-riyadh/">Website Design &amp; Development</a><a href="/services/brand-identity/">Brand Identity Development</a><a href="/services/digital-advertising/">Advertising Campaign Management</a><a href="/services/manage-google-adwords-campaigns/">Google Ads Management</a><a href="/services/social-media-management/">Social Media Management &amp; Content Creation</a><a href="/services/ecommerce-development/">E-commerce &amp; Custom Systems Development</a><a href="/services/mobile-application/">Mobile Application Development</a><a href="/services/marketing-consulting/">Marketing Consulting &amp; Strategy Planning</a><a href="/services/conversion-rate-optimization/">Conversion Rate Optimization (CRO)</a><a href="/services/email-marketing/">Email Marketing</a><a href="/services/seo-riyadh/">Search Engine Optimization (SEO)</a></div></details></li>
                         <li class="btn btn-link">
                             <a href="/#testimonials" class="btn-click magnetic" data-strength="20"
                                 data-strength-text="10">
@@ -55,13 +49,13 @@
                                 </span>
                             </a>
                         </li>
-                    <li class="btn btn-link btn-lang">
+
+                    <li class="btn btn-link rf-nav-team"><a href="/team/" class="btn-click magnetic" data-team-nav="true" data-strength="20" data-strength-text="10"><span class="btn-text"><span class="btn-text-inner">Our Team</span></span></a></li><li class="btn btn-link rf-nav-faq"><a href="/faqs/" class="btn-click magnetic" data-strength="20" data-strength-text="10"><span class="btn-text"><span class="btn-text-inner">All FAQs</span></span></a></li><li class="btn btn-link btn-lang">
                             <a href="{{ $other := "" }}{{ range $.Translations }}{{ if not (partial "empty-listing.html" .) }}{{ $other = .RelPermalink }}{{ end }}{{ end }}{{ with $other }}{{ . }}{{ else }}{{ if eq $.Lang "ar" }}/blog/{{ else }}/blog/ar/{{ end }}{{ end }}" class="btn-click magnetic" data-strength="20" data-strength-text="10"
                                 hreflang="ar" lang="ar" data-barba-prevent>
                                 <span class="btn-text">
                                     <span class="btn-text-inner">العربية</span>
                                 </span>
                             </a>
-                        </li>
-                    </ul>
+                        </li></ul>
                 </div>

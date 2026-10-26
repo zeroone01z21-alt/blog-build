@@ -1,5 +1,5 @@
 {{- /*
-  العمود الجانبي للمقال: بطاقة استشارة، ثم مقالات ذات صلة.
+  العمود الجانبي للمقال: مقالات ذات صلة، ثم بطاقة استشارة فاتحة.
 
   النص من تعليق كيرلس على عرض العميل (2026-10-18). ضغطة واتساب تُحسب
   «عميلًا محتملًا» في GA4 وAds بلا شيء هنا: initLeadTracking في سكربت
@@ -14,14 +14,6 @@
 {{- $same := where $pages "Params.categories" "intersect" (.Params.categories | default slice) -}}
 {{- $related := first 4 ($same | append (complement $same $pages)) -}}
 <aside class="post-aside" aria-label="{{ T "asideLabel" }}">
-  <section class="aside-card aside-cta">
-    <h2 class="aside-title">{{ T "ctaTitle" }}</h2>
-    <p>{{ T "ctaText" }}</p>
-    <div class="aside-actions">
-      <a class="button button-primary" href="https://wa.me/966530307054" target="_blank" rel="noopener">{{ T "ctaWhatsapp" }}</a>
-      <a class="button button-ghost" href="{{ cond $ar "/ar/contact/" "/contact/" }}">{{ T "contact" }}</a>
-    </div>
-  </section>
   {{- with $related }}
   <section class="aside-card aside-related">
     <h2 class="aside-title">{{ T "relatedTitle" }}</h2>
@@ -49,4 +41,13 @@
     </ul>
   </section>
   {{- end }}
+  <section class="aside-card aside-cta">
+    <span class="aside-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M20 11.5a8 8 0 0 1-8 8H5l-3 2v-10a9 9 0 0 1 18 0Z"/><path d="M7 10h8M7 14h5"/></svg></span>
+    <h2 class="aside-title">{{ T "ctaTitle" }}</h2>
+    <p>{{ T "ctaText" }}</p>
+    <div class="aside-actions">
+      <a class="button button-primary" href="https://wa.me/966530307054" target="_blank" rel="noopener">{{ T "ctaWhatsapp" }}<span aria-hidden="true">↗</span></a>
+      <a class="button button-ghost" href="{{ cond $ar "/ar/contact/" "/contact/" }}">{{ T "contact" }}<span aria-hidden="true">↗</span></a>
+    </div>
+  </section>
 </aside>

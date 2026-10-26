@@ -1,11 +1,11 @@
 {{ define "main" }}
 {{- /*
-  المقال في بطاقة، وبجانبها عمود جانبي: استشارة ومقالات ذات صلة (طلب
+  المقال في بطاقة، وبجانبها عمود جانبي: مقالات ذات صلة ثم استشارة (طلب
   العميل، 2026-10-22). على الشاشات الضيّقة يأتي العمود بعد المقال، فترتيب
   المصدر هو ترتيب القراءة على الجوال.
 */ -}}
 <div class="post-layout">
-<article class="post">
+<article class="post" id="post-article">
   <header class="post-head">
     {{- with .GetTerms "categories" }}
     <p class="post-cats">
@@ -31,16 +31,26 @@
       "class" "post-cover"
       "loading" "eager"
       "fetchpriority" "high"
+      "preview" true
       "sizes" "(max-width: 36rem) calc(100vw - 3rem), (max-width: 64rem) 35rem, (max-width: 113rem) calc(16rem + 30vw), 50rem"
     ) }}
   {{- end }}{{ end }}
 
-  {{ partial "post-toc.html" . }}
-
-  <div class="post-body">{{ .Content }}</div>
+  <div class="post-reading" id="post-reading">
+    {{ partial "post-toc.html" . }}
+    <div class="post-body">{{ .Content }}</div>
+  </div>
 </article>
 
 {{ partial "post-aside.html" . }}
+
+{{- /* Reuse the site's accessible image dialog on both direct and Barba entry.
+       No duplicate gallery library or extra initialization is needed. */ -}}
+<div hidden data-z2o-strings>
+  <span data-z2o-string="dialog">{{ T "imagePreview" }}</span>
+  <span data-z2o-string="close">{{ T "imageClose" }}</span>
+  <span data-z2o-string="original">{{ T "imageOriginal" }}</span>
+</div>
 
 <p class="post-back"><a href="{{ cond (eq .Lang "ar") "/blog/ar/" "/blog/" }}">{{ T "backArrow" }} {{ T "backToBlog" }}</a></p>
 </div>

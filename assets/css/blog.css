@@ -42,6 +42,8 @@
      الموقع، فبلا أبٍ موضَّع يقفز إلى أقرب واحد ويهبط في مكان خاطئ.
      والحشو العلوي يفسح ارتفاعه (91px على 1440) فلا يركب على المحتوى. */
   position: relative;
+  /* Approved service-page ivory, without changing the site's shared footer. */
+  background: var(--color-brand-ivory, #fffef8);
   padding-top: clamp(6rem, 4rem + 3vw, 8.5rem);
   color: var(--ink);
   font-family: 'Dennis Sans', system-ui, -apple-system, sans-serif;
@@ -492,6 +494,10 @@ html[dir="rtl"] .post-head h1 { letter-spacing: 0; line-height: 1.35; }
 .post-cats a:hover { text-decoration: underline; text-underline-offset: .18em; }
 .post-meta { margin: 0 0 2.2rem; color: var(--muted); font-size: .82rem; }
 .post-cover { margin-block-end: 2.5rem; border-radius: var(--radius); }
+.post-image-preview { display: block; max-width: 100%; margin: 0; cursor: zoom-in; text-decoration: none; border-radius: 1rem; }
+.post-image-preview:focus-visible { outline: 3px solid var(--orange); outline-offset: 5px; }
+.post-image-preview .responsive-picture { display: block; }
+.post-image-preview .post-cover { display: block; width: 100%; }
 .post-body > :first-child { margin-block-start: 0; }
 .post-body p { margin: 0 0 1.45em; }
 /* تباعد الأسطر: قاعدة `p{line-height:1.66}` في CSS الموقع مكتوبة على
@@ -571,12 +577,20 @@ html[dir="rtl"] .post-body h3 { line-height: 1.6; }
 .post-layout > .post-back { grid-column: 1; margin: 0; }
 
 /* محتويات المقالة (partials/post-toc.html) */
+/* clip preserves the site's horizontal crop without creating an invisible
+   scroll container that prevents native sticky on phones. */
+main#blog { overflow: clip; }
+.post-reading { display: flow-root; }
 .post-toc {
+  position: sticky;
+  top: 1rem;
+  z-index: 12;
   margin: 0 0 2.5rem;
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--cream) 65%, #fff);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: #fffef8;
+  box-shadow: inset 0 0 0 1px var(--line), 0 .35rem 1.5rem rgb(28 29 32 / 5%);
 }
+html.has-scroll-smooth .post-toc { position: relative; top: auto; will-change: transform; }
 .post-toc-summary {
   padding: 1rem 1.25rem;
   display: flex;
@@ -608,7 +622,10 @@ html[dir="rtl"] .post-body h3 { line-height: 1.6; }
   font-size: .72rem;
   text-align: center;
 }
-.post-toc-nav { padding: 0 1.25rem 1.1rem; }
+.post-toc-nav { max-height: min(55vh, 28rem); overflow-y: auto; overscroll-behavior-y: contain; padding: 0 1.25rem 1.1rem; scrollbar-width: thin; scrollbar-color: var(--orange) transparent; }
+/* Leave the chosen heading below the expanded contents panel, not behind it.
+   Shared anchor navigation reads this computed offset in smooth mode too. */
+.post-reading:has(> .post-toc[open]) .post-body h2 { scroll-margin-top: calc(min(55vh, 28rem) + 6rem); }
 .post-toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
 .post-toc ol ol { padding-inline-start: 1.5rem; }
 .post-toc li { counter-increment: toc; }
@@ -636,12 +653,19 @@ html[dir="rtl"] .post-body h3 { line-height: 1.6; }
   box-shadow: 0 0 0 1px var(--line);
 }
 .aside-title { margin: 0 0 .7rem; font-size: 1.15rem; font-weight: 700; line-height: 1.4; }
-.aside-cta { background: var(--ink); color: var(--cream); box-shadow: none; }
-.aside-cta p { margin: 0 0 1.25rem; color: rgb(255 253 237 / 72%); font-size: .92rem; line-height: 1.7; }
+.aside-cta { position: relative; background: linear-gradient(145deg, #fff 15%, #fff7ef 100%); color: var(--ink); box-shadow: inset 0 0 0 1px rgb(249 70 14 / 20%), 0 .5rem 2rem rgb(28 29 32 / 4%); }
+.aside-cta::before { content: ''; display: block; width: 2.5rem; height: 3px; border-radius: 99px; margin-block-end: 1.25rem; background: linear-gradient(120deg, #f9460e, #ff8000); }
+.aside-cta-icon { display: grid; place-items: center; width: 2.8rem; height: 2.8rem; margin-block-end: 1.1rem; border: 1px solid rgb(249 70 14 / 20%); border-radius: .9rem; color: var(--orange-text); background: #fff; }
+.aside-cta-icon svg { width: 1.4rem; height: 1.4rem; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.aside-cta p { margin: 0 0 1.25rem; color: #62625d; font-size: .92rem; line-height: 1.7; }
 .aside-actions { display: grid; gap: .6rem; }
-.button-ghost { border-color: rgb(255 253 237 / 35%); color: var(--cream); }
-.button-ghost:hover,
-.button-ghost:focus-visible { border-color: var(--cream); background: var(--cream); color: var(--ink); }
+.aside-actions .button { display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; min-height: 3.1rem; padding: .85rem 1.1rem; border-radius: 999px; font-size: .85rem; line-height: 1.5; }
+.aside-actions .button-primary { background: var(--orange-text); border-color: var(--orange-text); color: #fff; }
+.aside-actions .button-primary:hover,.aside-actions .button-primary:focus-visible { background: var(--ink); border-color: var(--ink); color: #fff; }
+.aside-actions .button-ghost { background: #fff; border-color: rgb(28 29 32 / 22%); color: var(--ink); }
+.aside-actions .button-ghost:hover,.aside-actions .button-ghost:focus-visible { background: #fff4eb; border-color: var(--orange); color: var(--orange-text); }
+.aside-actions .button:focus-visible,.post-toc-summary:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+html[dir="rtl"] .aside-actions .button > span { transform: scaleX(-1); }
 .aside-posts { margin: 0; padding: 0; display: grid; gap: 1rem; list-style: none; }
 .aside-posts li { padding-block-end: 1rem; border-block-end: 1px solid var(--line); }
 .aside-posts li:last-child { padding-block-end: 0; border-block-end: 0; }
@@ -684,7 +708,7 @@ html[dir="rtl"] .post-body h3 { line-height: 1.6; }
    }
 
    .post-aside {
-      grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       align-items: start;
    }
 }
