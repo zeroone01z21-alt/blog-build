@@ -147,3 +147,12 @@ other = "Related articles"
 
 [tableLabel]
 other = "Table"
+
+[imagePreview]
+other = "Preview the full image"
+
+[imageClose]
+other = "Close image preview"
+
+[imageOriginal]
+other = "Open original image"

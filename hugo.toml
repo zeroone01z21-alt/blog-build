@@ -62,7 +62,7 @@ disableDefaultSiteRedirect = true
   # اللوحة، مرقّمة. «عنوان 1» هو عنوان المقال فلا يدخل.
   [markup.tableOfContents]
     startLevel = 2
-    endLevel = 3
+    endLevel = 2
     ordered = true
 
 [outputs]

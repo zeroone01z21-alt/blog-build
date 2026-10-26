@@ -1,9 +1,7 @@
 {{- /*
-  «محتويات المقالة» — من «عنوان 2» و«عنوان 3» (hugo.toml: markup.tableOfContents).
-
-  يظهر لمقال فيه ثلاثة عناوين رئيسية فأكثر؛ القصير لا يحتاج فهرسًا.
-  مفتوح إن كانت عناوينه 12 فأقل، ومغلق إن زادت: مقال «أفضل شركة تسويق»
-  فيه 41 عنوانًا، وفهرسه مفتوحًا يدفع النص ألف بكسل إلى الأسفل على الجوال.
+  Owner review 2026-10-26: H2 only, with original heading IDs unchanged.
+  A compact disclosure follows reading through the site's existing smooth
+  scroll sticky controller; native sticky is the mobile/no-script fallback.
 
   القفز إلى العنوان على الكمبيوتر يمرّ عبر سكربت الموقع: locomotive يمرّر
   المحتوى بـtransform، فـhref="#…" وحده لا يحرّك الصفحة (قِيس على المقال
@@ -15,8 +13,8 @@
        رقم أو رقمان فقط: «2026» في أول عنوان ليس ترقيمًا. */ -}}
 {{- $toc := .TableOfContents | replaceRE `(<a href="#[^"]*">)\s*[0-9٠-٩]{1,2}\s*[.)\-–]\s+` "$1" -}}
 {{- $entries := len (findRE `<li>` $toc) -}}
-{{- if ge (len (findRE `<h2[ >]` .Content)) 3 }}
-<details class="post-toc"{{ if le $entries 12 }} open{{ end }}>
+{{- if gt $entries 0 }}
+<details class="post-toc" data-scroll data-scroll-sticky data-scroll-target="#post-reading" data-scroll-offset="-16,0">
   <summary class="post-toc-summary">
     <span class="post-toc-title">{{ T "tocTitle" }}</span>
     <span class="post-toc-count">{{ $entries }}</span>

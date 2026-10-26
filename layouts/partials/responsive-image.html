@@ -13,6 +13,11 @@
 {{- $fetchpriority := .fetchpriority | default "auto" -}}
 {{- $candidates := .widths | default (slice 480 800 1200) -}}
 {{- $cap := index $candidates (sub (len $candidates) 1) -}}
+{{- /* Opt-in only for article cover/body, never linked related-card thumbs.
+       Original resource is fetched only on click; default reading stays small. */ -}}
+{{- if .preview -}}
+<a class="post-image-preview z2o-evidence" href="{{ $image.RelPermalink }}" data-z2o-viewer data-barba-prevent aria-label="{{ T "imagePreview" }}{{ with $alt }}: {{ . }}{{ end }}">
+{{- end -}}
 
 {{- if reflect.IsImageResourceProcessable $image -}}
   {{- $widths := slice -}}
@@ -42,3 +47,4 @@
   <img class="{{ $class }}" src="{{ $image.RelPermalink }}" alt="{{ $alt }}"
        loading="{{ $loading }}" decoding="async" fetchpriority="{{ $fetchpriority }}">
 {{- end -}}
+{{- if .preview }}</a>{{ end -}}

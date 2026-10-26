@@ -1,4 +1,5 @@
 
+        <a class="skip-link" href="#main-content">انتقل إلى المحتوى الرئيسي</a>
         <div class="mouse-pos-list-image no-select">
             <div class="mouse-pos-list-image-bounce overlay">
                 <div class="float-image-wrap"></div>
@@ -22,7 +23,7 @@
         </a>
         <!-- ===== Floating hamburger button (opens the side menu) ===== -->
         <div class="btn btn-hamburger">
-            <div class="btn-click magnetic" data-strength="50" data-strength-text="25">
+            <div class="btn-click magnetic" data-strength="50" data-strength-text="25" role="button" tabindex="0" aria-expanded="false" aria-controls="site-menu">
                 <div class="btn-fill"></div>
                 <div class="btn-text">
                     <div class="btn-bars"></div>
@@ -32,7 +33,7 @@
         </div>
         <div class="overlay fixed-nav-back"></div>
         <!-- ===== Side menu — navigation + social links ===== -->
-        <div class="fixed-nav theme-dark">
+        <div class="fixed-nav theme-dark" id="site-menu" inert>
             <div class="fixed-nav-rounded-div">
                 <div class="rounded-div-wrap">
                     <div class="rounded-div"></div>
@@ -57,13 +58,7 @@
                                 </span>
                             </a>
                         </li>
-                        <li class="btn btn-link">
-                            <a href="/ar/services/" class="btn-click magnetic" data-strength="24" data-strength-text="12">
-                                <span class="btn-text">
-                                    <span class="btn-text-inner">خدماتنا</span>
-                                </span>
-                            </a>
-                        </li>
+                        <li class="btn btn-link rf-sidebar-services"><a href="/ar/services/" class="btn-click magnetic" data-strength="20" data-strength-text="10"><span class="btn-text"><span class="btn-text-inner">خدماتنا</span></span></a></li>
                         <li class="btn btn-link">
                             <a href="/ar/#testimonials" class="btn-click magnetic" data-strength="24"
                                 data-strength-text="12">
@@ -93,15 +88,15 @@
                                 </span>
                             </a>
                         </li>
-                    <li class="btn btn-link btn-lang">
+
+                    <li class="btn btn-link rf-nav-team"><a href="/ar/team/" class="btn-click magnetic" data-team-nav="true" data-strength="20" data-strength-text="10"><span class="btn-text"><span class="btn-text-inner">فريقنا</span></span></a></li><li class="btn btn-link rf-nav-faq"><a href="/ar/faqs/" class="btn-click magnetic" data-strength="20" data-strength-text="10"><span class="btn-text"><span class="btn-text-inner">كل الأسئلة الشائعة</span></span></a></li><li class="btn btn-link btn-lang">
                             <a href="{{ $other := "" }}{{ range $.Translations }}{{ if not (partial "empty-listing.html" .) }}{{ $other = .RelPermalink }}{{ end }}{{ end }}{{ with $other }}{{ . }}{{ else }}{{ if eq $.Lang "ar" }}/blog/{{ else }}/blog/ar/{{ end }}{{ end }}" class="btn-click magnetic" data-strength="20" data-strength-text="10"
                                 hreflang="en" lang="en" data-barba-prevent>
                                 <span class="btn-text">
                                     <span class="btn-text-inner">English</span>
                                 </span>
                             </a>
-                        </li>
-                    </ul>
+                        </li></ul>
                 </div>
                 <div class="row social-row">
                     <div class="stripe"></div>

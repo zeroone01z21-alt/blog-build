@@ -147,3 +147,12 @@ other = "مقالات ذات صلة"
 
 [tableLabel]
 other = "جدول"
+
+[imagePreview]
+other = "معاينة الصورة بالحجم الكامل"
+
+[imageClose]
+other = "إغلاق معاينة الصورة"
+
+[imageOriginal]
+other = "فتح الصورة الأصلية"
