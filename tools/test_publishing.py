@@ -212,6 +212,70 @@ class ContentChecks(Sandbox):
         self.assertTrue(any("slug" in m for _, m in problems), problems)
 
 
+# ── ما لا يحجز المقال (2026-11، بقرار المالك) ─────────────────────────
+class AdvisoryChecks(Sandbox):
+    def test_keyword_and_lengths_warn_but_do_not_hold(self) -> None:
+        text = article("kw-post", title="قصير",
+                       extra='focus_keyword: "تسويق متخصص في السعودية"\n')
+        bundle = write_bundle(self.tmp / "content", "kw-post", text)
+        warnings: list = []
+        problems = check_content.check_bundle(str(bundle), self.schema, warnings)
+        self.assertEqual(problems, [])
+        messages = [m for _, m in warnings]
+        self.assertTrue(any("العنوان" in m for m in messages), messages)
+        self.assertEqual(sum("الكلمة المفتاحية" in m for m in messages), 3, messages)
+
+    def test_empty_required_field_still_holds(self) -> None:
+        text = article("no-alt").replace('featured_image_alt: "وصف الصورة"\n', "")
+        bundle = write_bundle(self.tmp / "content", "no-alt", text)
+        self.assertTrue(check_content.check_bundle(str(bundle), self.schema))
+
+    def test_panel_does_not_block_saving_on_advisory_lengths(self) -> None:
+        import generate_cms
+        field = generate_cms.common_field("title", self.schema["fields"]["title"], i18n=True)
+        self.assertNotIn("maxlength", field)
+        self.assertNotIn("minlength", field)
+        self.assertIn("لا يمنع النشر", field["hint"])
+
+    def test_seo_length_and_duplicates_are_soft_on_articles_only(self) -> None:
+        import check_seo
+        self.assertTrue(check_seo.is_article_page("ar/my-post/index.html"))
+        self.assertTrue(check_seo.is_article_page("my-post/index.html"))
+        for page in ("index.html", "ar/index.html", "categories/seo/index.html",
+                     "ar/categories/index.html", "page/2/index.html", "404.html"):
+            self.assertFalse(check_seo.is_article_page(page), page)
+        check = check_seo.Check()
+        check.soft(check_seo.Page(path=Path("x"), relative="ar/my-post/index.html"), False, "طويل")
+        check.soft(check_seo.Page(path=Path("y"), relative="ar/index.html"), False, "طويل")
+        self.assertEqual(check.warnings, [("ar/my-post/index.html", "طويل")])
+        self.assertEqual(check.problems, [("ar/index.html", "طويل")])
+
+
+class FileNames(Sandbox):
+    def test_bad_names_are_fixed_in_the_staged_copy_only(self) -> None:
+        repo = self.content_repo()
+        body = BODY + "\n![صورة](<صورة الغلاف.JPG>)\n![b](_.webp)\n![c](zero-to-one_.webp)\n"
+        text = article("names-post", body=body).replace('"cover.webp"', '"_.webp"')
+        source = write_bundle(repo / "content" / "blog", "names-post", text,
+                              files=("_.webp", "صورة الغلاف.JPG", "zero-to-one_.webp", "image.webp"))
+        details: dict = {}
+        prepare_content.prepare(repo / "content", details=details)
+        staged = self.tmp / "content" / "names-post"
+        names = sorted(p.name for p in staged.iterdir())
+        # «image.webp» محجوز، فيأخذ «_.webp» رقمًا؛ والصيغة الكبيرة تصير صغيرة
+        self.assertEqual(names, ["image-2.ar.webp", "image.ar.jpg", "image.ar.webp",
+                                 "index.ar.md", "zero-to-one_.ar.webp"], names)
+        index = (staged / "index.ar.md").read_text(encoding="utf-8")
+        self.assertIn('featured_image: "image-2.ar.webp"', index)
+        self.assertIn("![صورة](<image.ar.jpg>)", index)
+        self.assertIn("![b](image-2.ar.webp)", index)
+        self.assertIn("![c](zero-to-one_.ar.webp)", index)
+        self.assertEqual(check_content.check_bundle(str(staged), self.schema), [])
+        self.assertTrue((source / "_.webp").exists())          # المصدر لا يتغيّر
+        self.assertEqual({n["before"] for n in details["names-post"]["names"]},
+                         {"_.webp", "صورة الغلاف.JPG"})
+
+
 # ── التجهيز المتسامح ─────────────────────────────────────────────────────
 class LenientPrepare(Sandbox):
     def test_one_bad_bundle_does_not_stop_the_rest(self) -> None:
@@ -492,6 +556,26 @@ class Report(unittest.TestCase):
         fatal = blog_report.attention(report_with(fatal={"stage": "hugo", "message": "x"}))
         self.assertTrue(fatal[0]["key"].startswith("fatal:"))
         self.assertTrue(blog_report.attention({"report": None})[0]["key"] == "no-report")
+
+    def test_missed_save_signal_alerts_the_owner(self) -> None:
+        bundle = report_with()
+        bundle["outcomes"]["trigger"] = "تشغيل دوري — لم يُبنَ آخر محتوى (abc1234) — إشارة الحفظ لم تصل"
+        items = blog_report.attention(bundle)
+        self.assertEqual([i["key"] for i in items], ["signal-missed"])
+        self.assertIn("BUILD_TRIGGER_TOKEN", items[0]["ar"])
+        bundle["outcomes"]["trigger"] = "حفظ في مستودع المحتوى"
+        self.assertEqual(blog_report.attention(bundle), [])
+
+    def test_warnings_show_as_tips_without_keeping_the_issue_open(self) -> None:
+        tip = {"slug": "tip-post", "status": "published", "titles": {"ar": "مقال"},
+               "warnings": [{"stage": "content", "message": "الكلمة المفتاحية لا ترد في الوصف"}],
+               "notes": ["file-renamed:_.webp→image.webp"]}
+        bundle = report_with(tip)
+        self.assertEqual(blog_report.attention(bundle), [])
+        text = blog_report.summary_markdown(bundle)
+        self.assertIn("💡", text)
+        self.assertIn("الكلمة المفتاحية لا ترد في الوصف", text)
+        self.assertIn("image.webp", text)
 
     def test_token_expiry(self) -> None:
         parse = blog_report.parse_expiry

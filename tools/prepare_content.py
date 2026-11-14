@@ -21,7 +21,9 @@ import sys
 import uuid
 from pathlib import Path
 
-from check_content import FRONT, parse_front_matter
+from urllib.parse import unquote
+
+from check_content import FRONT, MARKDOWN_IMAGE, parse_front_matter
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -213,6 +215,80 @@ def bundle_is_archived(bundle: Path) -> bool:
     return states == {True}
 
 
+# ── أسماء الملفات ──────────────────────────────────────────────────────
+#
+# قاعدة الأسماء في controls/schema.json (حروف إنجليزية صغيرة وأرقام وشرطات)
+# كانت تحجز المقال كله إن خالفها ملف واحد. في 2026-11-07 رفعت الكاتبة صورة
+# باسم عربي، فحوّلته اللوحة إلى «_.webp»، وبقي مقال «كيف اعمل اعلان في غوغل»
+# خارج الموقع أسبوعًا كاملًا بسبب اسم ملف لا يراه القارئ.
+#
+# الاسم شأن تقني لا تحريري، فيُصلَح هنا تلقائيًّا: يُعاد تسمية الملف في
+# النسخة المجهّزة، وتُحدَّث إشارات المقال إليه (صورة المشاركة وصور النصّ).
+# ملف الكاتب في blog-content لا يتغيّر، كالتوقيت والجداول.
+SAFE_NAME = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
+FEATURED_LINE = re.compile(r"(?m)^(featured_image:[ \t]*)([\"']?)([^\"'\n]*?)\2[ \t]*$")
+
+
+def safe_name(name: str, taken: set[str]) -> str:
+    stem, dot, ext = name.rpartition(".")
+    if not dot:
+        stem, ext = name, ""
+    ext = re.sub(r"[^a-z0-9]", "", ext.lower())[:10]
+    stem = re.sub(r"[^a-z0-9._-]+", "-", stem.lower())
+    stem = re.sub(r"[-_.]{2,}", "-", stem).strip("-_.")
+    stem = (stem or "image")[:60].strip("-_.") or "image"
+    candidate = f"{stem}.{ext}" if ext else stem
+    number = 2
+    while candidate in taken:
+        candidate = f"{stem}-{number}.{ext}" if ext else f"{stem}-{number}"
+        number += 1
+    return candidate
+
+
+def rewrite_references(index: Path, renamed: dict[str, str]) -> None:
+    """يحدّث صورة المشاركة وصور النصّ التي تشير إلى اسم قديم بالضبط."""
+    text = index.read_text(encoding="utf-8")
+    front = FRONT.match(text)
+    head, body = (text[:front.end()], text[front.end():]) if front else ("", text)
+
+    def featured(match: re.Match[str]) -> str:
+        new = renamed.get(match.group(3).strip()) or renamed.get(unquote(match.group(3).strip()))
+        return f"{match.group(1)}{match.group(2)}{new}{match.group(2)}" if new else match.group(0)
+
+    def image(match: re.Match[str]) -> str:
+        target = match.group(1) or match.group(2)
+        new = renamed.get(target) or renamed.get(unquote(target))
+        if not new:
+            return match.group(0)
+        start = match.start(1) if match.group(1) is not None else match.start(2)
+        end = match.end(1) if match.group(1) is not None else match.end(2)
+        whole = match.group(0)
+        return whole[:start - match.start()] + new + whole[end - match.start():]
+
+    updated = FEATURED_LINE.sub(featured, head) + MARKDOWN_IMAGE.sub(image, body)
+    if updated != text:
+        index.write_text(updated, encoding="utf-8")
+
+
+def normalise_file_names(bundle: Path) -> list[dict[str, str]]:
+    """يعيد تسمية كل ملف بالحزمة اسمه غير مقبول. يعيد ما تغيّر (قبل/بعد)."""
+    files = [item for item in sorted(bundle.iterdir())
+             if item.is_file() and not item.name.startswith(("index.", "."))]
+    taken = {item.name for item in files if SAFE_NAME.match(item.name)}
+    renamed: dict[str, str] = {}
+    for item in files:
+        if SAFE_NAME.match(item.name):
+            continue
+        new_name = safe_name(item.name, taken)
+        taken.add(new_name)
+        item.rename(bundle / new_name)
+        renamed[item.name] = new_name
+    if renamed:
+        for index in sorted(bundle.glob("index.*.md")):
+            rewrite_references(index, renamed)
+    return [{"before": old, "after": new} for old, new in renamed.items()]
+
+
 def localise_lone_language_resources(bundle: Path) -> int:
     """يمنح موارد الحزمة أحاديّة اللغة لاحقةَ تلك اللغة.
 
@@ -270,6 +346,7 @@ def stage_bundle(bundle: Path, destination: Path) -> dict[str, object]:
     السابقة بالتحويلات نفسها حرفيًّا.
     """
     shutil.copytree(bundle, destination)
+    names = normalise_file_names(destination)
     renamed = localise_lone_language_resources(destination)
     dates: list[dict[str, str]] = []
     tables: list[dict[str, object]] = []
@@ -279,7 +356,7 @@ def stage_bundle(bundle: Path, destination: Path) -> dict[str, object]:
             dates.append(change)
         for repair in repair_tables(index):
             tables.append({"file": index.name, **repair})
-    return {"renamed": renamed, "dates": dates, "tables": tables}
+    return {"renamed": renamed, "names": names, "dates": dates, "tables": tables}
 
 
 def prepare(

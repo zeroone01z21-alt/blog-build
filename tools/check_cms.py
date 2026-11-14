@@ -225,10 +225,15 @@ def main() -> int:
                 field = fields.get(name, {})
                 if field.get("required") != bool(rule.get("required", False)):
                     problems.append(f"[{lang}] required للحقل {name} لا يطابق المخطط")
-                if "min_length" in rule and field.get("minlength") != rule["min_length"]:
-                    problems.append(f"[{lang}] minlength للحقل {name} لا يطابق المخطط")
-                if "max_length" in rule and field.get("maxlength") != rule["max_length"]:
-                    problems.append(f"[{lang}] maxlength للحقل {name} لا يطابق المخطط")
+                if rule.get("advisory_length"):
+                    # حدّ اقتراحي: وجوده في اللوحة يمنع الحفظ، وهو ما أُلغي عمدًا.
+                    if "minlength" in field or "maxlength" in field:
+                        problems.append(f"[{lang}] الحقل {name} حدّه اقتراحي ولا يجوز أن يمنع الحفظ")
+                else:
+                    if "min_length" in rule and field.get("minlength") != rule["min_length"]:
+                        problems.append(f"[{lang}] minlength للحقل {name} لا يطابق المخطط")
+                    if "max_length" in rule and field.get("maxlength") != rule["max_length"]:
+                        problems.append(f"[{lang}] maxlength للحقل {name} لا يطابق المخطط")
                 if rule.get("pattern") and field.get("pattern", [None])[0] != rule["pattern"]:
                     problems.append(f"[{lang}] pattern للحقل {name} لا يطابق المخطط")
 
