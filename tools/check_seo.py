@@ -123,6 +123,21 @@ class DocumentParser(HTMLParser):
 class Check:
     def __init__(self) -> None:
         self.problems: list[tuple[str, str]] = []
+        self.warnings: list[tuple[str, str]] = []
+
+    def soft(self, page: Page, condition: bool, message: str) -> None:
+        """على صفحة مقال: تنبيه لا يحجز. على صفحات القالب: شرط كما كان.
+
+        طول العنوان والوصف وتكرارهما جودةُ سيو يقرّرها الكاتب، لا عطل في
+        الصفحة؛ وحجز المقال بسببها أبقى تعديلات الكاتب خارج الموقع أسابيع
+        (2026-11). صفحات القائمة والتصنيفات نصوصها من القالب، فتبقى صارمة.
+        """
+        if condition:
+            return
+        if is_article_page(page.relative):
+            self.warnings.append((page.relative, message))
+        else:
+            self.add(page, message)
 
     def add(self, page: Page | str, message: str) -> None:
         name = page.relative if isinstance(page, Page) else page
@@ -131,6 +146,14 @@ class Check:
     def require(self, page: Page | str, condition: bool, message: str) -> None:
         if not condition:
             self.add(page, message)
+
+
+def is_article_page(relative: str) -> bool:
+    """«<slug>/index.html» أو «ar/<slug>/index.html» — لا قائمة ولا تصنيف ولا 404."""
+    parts = relative.split("/")
+    if parts and parts[0] == "ar":
+        parts = parts[1:]
+    return len(parts) == 2 and parts[1] == "index.html" and parts[0] not in {"categories", "page"}
 
 
 def expected_url(relative: str) -> str:
@@ -225,15 +248,15 @@ def schema_of_type(page: Page, wanted: str) -> dict[str, Any] | None:
 def validate_page(page: Page, check: Check) -> None:
     title = one_value(page, page.titles, "عنصر title", check)
     if title:
-        check.require(page, 10 <= len(title) <= 70,
-                      f"طول title خارج 10–70 محرفًا ({len(title)})")
+        check.soft(page, 10 <= len(title) <= 70,
+                   f"طول عنوان الصفحة في جوجل خارج 10–70 محرفًا ({len(title)})")
 
     description = one_value(
         page, meta_values(page, "description"), "meta description", check,
     )
     if description:
-        check.require(page, 50 <= len(description) <= 160,
-                      f"طول الوصف خارج 50–160 محرفًا ({len(description)})")
+        check.soft(page, 50 <= len(description) <= 160,
+                   f"طول الوصف خارج 50–160 محرفًا ({len(description)})")
 
     canonicals = [item.get("href", "") for item in link_values(page, "canonical")]
     page.canonical = one_value(page, canonicals, "canonical", check)
@@ -433,7 +456,7 @@ def validate_unique_metadata(pages: list[Page], check: Check) -> None:
                 continue
             key = value.casefold()
             if key in seen:
-                check.add(page, f"{label} مكرر مع {seen[key].relative}")
+                check.soft(page, False, f"{label} مكرر مع {seen[key].relative}")
             else:
                 seen[key] = page
 
@@ -476,7 +499,16 @@ def validate_server_files(public: Path, check: Check) -> None:
                       "تعليمة Header ممنوعة في .htaccess العربي")
 
 
-def report(pages: list[Page], check: Check, json_out: Path | None = None) -> int:
+def report(pages: list[Page], check: Check, json_out: Path | None = None,
+           warnings_out: Path | None = None) -> int:
+    if warnings_out is not None:
+        warnings_out.write_text(json.dumps(
+            [{"page": name, "message": message} for name, message in check.warnings],
+            ensure_ascii=False, indent=2), encoding="utf-8")
+    if check.warnings:
+        print(f"  💡 {len(check.warnings)} تنبيه لا يحجز مقالًا:")
+        for name, message in check.warnings:
+            print(f"     • {name}: {message}")
     # --json-out: نسخة منظّمة من المشكلات نفسها، لبنّاء المدونة كي ينسب
     # مشكلة صفحة مقال إلى مقالها. المخرج النصّي ورمز الخروج لا يتغيّران.
     if json_out is not None:
@@ -500,17 +532,25 @@ def report(pages: list[Page], check: Check, json_out: Path | None = None) -> int
 def main() -> int:
     args = sys.argv[1:]
     json_out: Path | None = None
+    warnings_out: Path | None = None
+    if "--warnings-out" in args:
+        at = args.index("--warnings-out")
+        if at + 1 >= len(args):
+            print("  --warnings-out يحتاج مسار ملف")
+            return 2
+        warnings_out = Path(args[at + 1])
+        args = args[:at] + args[at + 2:]
     if len(args) == 3 and args[1] == "--json-out":
         json_out = Path(args[2])
         args = args[:1]
     if len(args) != 1:
-        print("  الاستخدام: check_seo.py <مجلد المخرجات> [--json-out <ملف>]")
+        print("  الاستخدام: check_seo.py <مجلد المخرجات> [--json-out <ملف>] [--warnings-out <ملف>]")
         return 2
     public = Path(args[0]).resolve()
     check = Check()
     if not public.is_dir():
         check.add(str(public), "مجلد المخرجات غير موجود")
-        return report([], check, json_out)
+        return report([], check, json_out, warnings_out)
 
     paths = sorted(public.rglob("*.html"))
     check.require(str(public), bool(paths), "لا توجد صفحات HTML")
@@ -531,7 +571,7 @@ def main() -> int:
     validate_reciprocal_hreflang(pages, check)
     validate_unique_metadata(pages, check)
     validate_server_files(public, check)
-    return report(pages, check, json_out)
+    return report(pages, check, json_out, warnings_out)
 
 
 if __name__ == "__main__":

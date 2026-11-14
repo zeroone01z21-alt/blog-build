@@ -85,7 +85,22 @@ def display(path):
     return os.path.relpath(full, ROOT) if full.startswith(ROOT + os.sep) else full
 
 
-def check_file(path, schema, problems):
+# ── ما يحجز المقال وما يُنبّه الكاتب فقط (2026-11، بقرار المالك) ─────────
+#
+# حتى نوفمبر 2026 كان كل بند هنا يحجز المقال. فبقي تعديل مقال «تسويق متخصص»
+# محجوزًا من 2 أكتوبر لأن الكلمة المفتاحية لم ترد في نصّه، وكان الموقع يعرض
+# نسخة قديمة والكاتب يظن أن تعديله نُشر. طلب المالك ألّا يتوقف النشر على
+# الكلمة المفتاحية، وأن تكون كل خانة مستقلة عن غيرها.
+#
+# فصارت بنود «جودة السيو» تنبيهًا للكاتب يظهر في لوحة البلاغات والمقال
+# منشور: حدود الطول في كل حقل عليه "advisory_length" في المخطط (العنوان،
+# وعنوان محركات البحث، والوصف، والكلمة)، وورود الكلمة المفتاحية. ويبقى
+# حاجزًا ما يكسر الصفحة نفسها: حقل إلزامي فارغ، رابط غير صالح، تاريخ غير
+# مفهوم، صورة مفقودة، عناوين تُسقط القالب، مقال فارغ.
+
+
+def check_file(path, schema, problems, warnings=None):
+    """``warnings``: إن مُرّرت قائمة جُمعت فيها التنبيهات (لا تحجز)؛ وإلا أُهملت."""
     rel = display(path)
     with open(path, encoding="utf-8") as handle:
         text = handle.read()
@@ -93,6 +108,10 @@ def check_file(path, schema, problems):
 
     def bad(msg):
         problems.append((rel, msg))
+
+    def soft(msg):
+        if warnings is not None:
+            warnings.append((rel, msg))
 
     if fm is None:
         bad("الملف لا يبدأ بكتلة إعدادات بين سطري ---. أعد حفظه من اللوحة.")
@@ -135,7 +154,8 @@ def check_file(path, schema, problems):
             n = visible_length(val)
             lo, hi = rule.get("min_length"), rule.get("max_length")
             if (lo and n < lo) or (hi and n > hi):
-                bad((rule.get("error_ar") or f"«{name}» خارج الحدود المسموحة.")
+                (soft if rule.get("advisory_length") else bad)(
+                    (rule.get("error_ar") or f"«{name}» خارج الحدود المسموحة.")
                     .replace("{actual}", str(n)))
             pat = rule.get("pattern")
             if pat and not re.match(pat, str(val)):
@@ -198,9 +218,8 @@ def check_file(path, schema, problems):
     # الأفضل أن يُمسك هنا: باسم ملفه، وبالعربية، وقبل أن يبدأ البناء.
     # ── الكلمة المفتاحية المستهدفة ──
     #
-    # الحقل اختياري، فالفحص لا يعمل إلا إذا ملأه الكاتب — أي أنه تعاقَد على
-    # استهداف عبارة بعينها. ومتى تعاقد، فغيابها عن العنوان أو الوصف أو النصّ
-    # يعني أن المقال لا يستهدفها فعلًا.
+    # الحقل اختياري، فالفحص لا يعمل إلا إذا ملأه الكاتب. غيابها عن العنوان
+    # أو الوصف أو النصّ تنبيه للكاتب لا حجز للمقال (advisory_length أعلاه).
     #
     # والمطابقة تُطبَّع قبل المقارنة: العربية تُكتب بهمزات وتاءات وألفات
     # مقصورة متبادلة، و«تحسين محرّكات البحث» بشدّة لا يساوي «تحسين محركات
@@ -218,11 +237,11 @@ def check_file(path, schema, problems):
         for field_name, label in (("title", "عنوان المقال"),
                                   ("description", "الوصف التعريفي")):
             if needle not in fold(fm.get(field_name)):
-                bad(f"الكلمة المفتاحية «{keyword}» لا ترد في {label}. "
-                    "ضعها فيه أو غيّر الكلمة المستهدفة.")
+                soft(f"الكلمة المفتاحية «{keyword}» لا ترد في {label}. "
+                     "يُستحسن وضعها فيه.")
         if needle not in fold(body):
-            bad(f"الكلمة المفتاحية «{keyword}» لا ترد في نصّ المقال إطلاقًا. "
-                "اكتب عنها فعلًا أو اترك الحقل فارغًا.")
+            soft(f"الكلمة المفتاحية «{keyword}» لا ترد في نصّ المقال. "
+                 "يُستحسن ذكرها في النص.")
 
     headings = [
         (len(m.group(1)), m.group(2).strip())
@@ -375,16 +394,17 @@ def check_bundle_consistency(directory, problems):
         check_one_bundle_consistency(name, bundle, problems)
 
 
-def check_bundle(bundle, schema):
+def check_bundle(bundle, schema, warnings=None):
     """كل فحوص مقال واحد، لبنّاء المدونة: مشكلة في مقال تحجزه هو وحده.
 
     الفحوص نفسها التي يجريها main() على الشجرة كلها، مقصورةً على الحزمة.
+    ``warnings``: قائمة تُجمع فيها التنبيهات التي لا تحجز.
     """
     problems = []
     name = os.path.basename(os.path.normpath(bundle))
     for filename in sorted(os.listdir(bundle)):
         if filename.endswith(".md"):
-            check_file(os.path.join(bundle, filename), schema, problems)
+            check_file(os.path.join(bundle, filename), schema, problems, warnings)
     check_one_bundle_consistency(name, bundle, problems)
     check_images(bundle, schema, problems)
     return problems
@@ -401,13 +421,14 @@ def main():
 
     schema = load_schema()
     problems = []
+    warnings = []
     count = 0
     for base, dirs, files in os.walk(directory):
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         for f in files:
             if f.endswith(".md"):
                 count += 1
-                check_file(os.path.join(base, f), schema, problems)
+                check_file(os.path.join(base, f), schema, problems, warnings)
     check_bundle_consistency(directory, problems)
     check_images(directory, schema, problems)
 
@@ -416,6 +437,10 @@ def main():
                          ensure_ascii=False, indent=2))
         return 1 if problems else 0
 
+    if warnings and not as_json:
+        print(f"  💡 {len(warnings)} تنبيه لا يوقف النشر:")
+        for f, m in warnings:
+            print(f"     • {f}: {m}")
     if not problems:
         print(f"  ✅ {count} ملف — لا مشاكل")
         return 0

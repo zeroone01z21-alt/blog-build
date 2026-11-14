@@ -152,6 +152,8 @@ class Article:
         self.live_before: list[str] = []
         self.problems: list[dict[str, str]] = []
         self.notes: list[str] = []
+        # تنبيهات للكاتب لا تحجز المقال (طول العنوان، الكلمة المفتاحية…)
+        self.warnings: list[dict[str, str]] = []
         self.fallback: dict[str, str] | None = None
         self.fallback_dir: Path | None = None
         self.rejected: set[str] = set()
@@ -169,6 +171,11 @@ class Article:
         if entry not in self.problems:
             self.problems.append(entry)
 
+    def warn(self, stage: str, message: str, file: str = "") -> None:
+        entry = {"stage": stage, "file": file, "message": message}
+        if entry not in self.warnings:
+            self.warnings.append(entry)
+
     def as_dict(self) -> dict:
         return {
             "slug": self.slug, "status": self.status, "langs": self.langs,
@@ -177,7 +184,7 @@ class Article:
             "archived": self.archived, "live_before": self.live_before,
             "published": self.published, "problems": self.problems,
             "fallback": self.fallback, "fallback_rejections": self.rejections,
-            "notes": self.notes,
+            "notes": self.notes, "warnings": self.warnings,
         }
 
 
@@ -233,6 +240,8 @@ class Builder:
                         f"device-offset:{change['field']}:{change['before']}→{change['after']}")
             for repair in info.get("tables", []):
                 art.notes.append(f"table-delimiter:{repair['file']}:{repair['line']}")
+            for fixed in info.get("names", []):
+                art.notes.append(f"file-renamed:{fixed['before']}→{fixed['after']}")
             for message in prepare_problems.get(name, []):
                 art.problem("prepare", message)
             if self.site_blog is not None:
@@ -247,8 +256,11 @@ class Builder:
             staged = CONTENT / name
             if not staged.is_dir():
                 continue
-            for file, message in check_content.check_bundle(str(staged), self.schema):
+            warnings: list[tuple[str, str]] = []
+            for file, message in check_content.check_bundle(str(staged), self.schema, warnings):
                 art.problem("content", message, Path(file).name)
+            for file, message in warnings:
+                art.warn("content", message, Path(file).name)
 
     def held(self) -> list[Article]:
         return [a for a in self.articles.values() if a.problems and not a.archived]
@@ -428,8 +440,12 @@ class Builder:
     # ── جولة بناء ─────────────────────────────────────────────────────
     def gate_json(self, stage: str, tool: str) -> list[dict] | None:
         out_file = self.scratch / f"{stage}-{self.rounds}.json"
-        rc, output = run([sys.executable, str(TOOLS / tool), str(self.public),
-                          "--json-out", str(out_file)])
+        command = [sys.executable, str(TOOLS / tool), str(self.public), "--json-out", str(out_file)]
+        warn_file = self.scratch / f"{stage}-{self.rounds}-warnings.json"
+        if tool == "check_seo.py":
+            command += ["--warnings-out", str(warn_file)]
+        rc, output = run(command)
+        self.collect_warnings(stage, warn_file)
         if rc == 0:
             return None
         try:
@@ -439,6 +455,20 @@ class Builder:
         if not items:
             raise Fatal(stage, f"بوابة {stage} فشلت دون مشكلات مسمّاة.", tail(output))
         return items
+
+    def collect_warnings(self, stage: str, warn_file: Path) -> None:
+        """تنبيهات بوابة لا تحجز: تُنسب إلى مقالها، وتُستبدل في كل جولة."""
+        for art in self.articles.values():
+            art.warnings = [w for w in art.warnings if w["stage"] != stage]
+        try:
+            items = json.loads(warn_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        for item in items:
+            page = str(item.get("page", ""))
+            slug = self.slug_of_page(page)
+            if slug in self.articles:
+                self.articles[slug].warn(stage, str(item.get("message", "")), page)
 
     def build_round(self) -> dict[str, list[str]]:
         """يعيد الأعطال المنسوبة إلى مقالات؛ قاموس فارغ = اجتازت البوابات كلها."""

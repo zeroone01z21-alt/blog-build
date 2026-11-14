@@ -250,6 +250,7 @@ jobs:
           LIVE_OUTCOME: ${{ steps.live_verify.outcome }}
           INDEXNOW_OUTCOME: ${{ steps.indexnow_submit.outcome }}
           PUSHED_SHA: ${{ steps.push_site.outputs.sha }}
+          BUILD_REASON: ${{ inputs.reason }}
         run: |
           python3 tools/blog_report.py summary \
             --report "$RUNNER_TEMP/blog-report.json" --token "$RUNNER_TEMP/token.json"
@@ -264,6 +265,7 @@ jobs:
           LIVE_OUTCOME: ${{ steps.live_verify.outcome }}
           INDEXNOW_OUTCOME: ${{ steps.indexnow_submit.outcome }}
           PUSHED_SHA: ${{ steps.push_site.outputs.sha }}
+          BUILD_REASON: ${{ inputs.reason }}
         run: |
           python3 tools/blog_report.py export \
             --report "$RUNNER_TEMP/blog-report.json" --token "$RUNNER_TEMP/token.json" \

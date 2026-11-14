@@ -235,6 +235,17 @@
           }),
           section("مسودات تحتاج إصلاحًا قبل نشرها", by("draft"))
         ].forEach(function (block) { if (block) body.push(block); });
+        // منشور مع اقتراحات (طول العنوان، الكلمة المفتاحية…): لا يحجز ولا يُعدّ.
+        var tips = (status.h || []).map(function (entry) {
+          return el("div", { "class": "item" }, [
+            el("strong", { text: entry.n || entry.s }),
+            el("span", { "class": "slug", text: entry.s }),
+            el("ul", {}, (entry.h || []).map(function (line) { return el("li", { text: line }); }))
+          ]);
+        });
+        if (tips.length) {
+          body.push(el("div", {}, [el("h3", { text: "💡 منشور — اقتراحات لتحسينه (اختيارية)" })].concat(tips)));
+        }
         if (!blocked && !held.length && !kept.length) {
           body.push(el("div", { "class": "ok", text: "✅ كل المقالات الجاهزة منشورة." }));
         }

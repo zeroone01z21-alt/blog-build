@@ -5,7 +5,8 @@
     "تعديل هذا الملف يتطلب تحديث controls/fingerprints.txt في نفس العملية،",
     "وإلا فشل البناء. راجع tools/check_controls.py.",
     "",
-    "رسائل الخطأ بالعربية عمداً — الكاتب غير تقني ويقرؤها هو."
+    "رسائل الخطأ بالعربية عمداً — الكاتب غير تقني ويقرؤها هو.",
+    "advisory_length (2026-11، بقرار المالك): حدّا الطول اقتراح للكاتب لا يحجز المقال ولا يمنع الحفظ في اللوحة؛ الفراغ في حقل إلزامي يبقى حاجزًا."
   ],
 
   "version": 1,
@@ -22,7 +23,7 @@
     "$comment": "حزمة الصفحة — القسم 10. الصور داخل مجلد المقال حصراً، لا مجلد صور عام",
     "path": "content/blog/<slug>/",
     "index_file": "index.<lang>.md",
-    "image_formats": ["webp", "avif", "jpg", "png"],
+    "image_formats": ["webp", "avif", "jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff"],
     "max_image_bytes": 512000,
     "max_image_error_ar": "الصورة «{name}» حجمها {actual} والحد الأقصى 500 كيلوبايت. اضغطها من اللوحة عند الرفع ثم أعد المحاولة."
   },
@@ -30,6 +31,7 @@
   "fields": {
     "title": {
       "type": "string",
+      "advisory_length": true,
       "required": true,
       "min_length": 10,
       "max_length": 70,
@@ -37,6 +39,7 @@
     },
     "meta_title": {
       "type": "string",
+      "advisory_length": true,
       "required": false,
       "min_length": 10,
       "max_length": 70,
@@ -45,14 +48,16 @@
     },
     "focus_keyword": {
       "type": "string",
+      "advisory_length": true,
       "required": false,
       "min_length": 3,
       "max_length": 60,
-      "$comment": "اختياري. حين يُملأ يفرض check_content ظهوره في العنوان والوصف والنص. اختياريّته مقصودة: الإلزام يدفع الكاتب إلى كلمة صوريّة، والفحص حينئذ يصادق على لا شيء.",
+      "$comment": "اختياري. حين يُملأ ينبّه check_content إن غاب عن العنوان أو الوصف أو النص، ولا يحجز المقال (2026-11 بقرار المالك). وحدود الطول في title وmeta_title وdescription وهذا الحقل تنبيه كذلك؛ انظر advisory_length.",
       "error_ar": "الكلمة المفتاحية يجب أن تكون بين 3 و60 محرفاً. كلمتك الآن {actual} محرفاً."
     },
     "description": {
       "type": "string",
+      "advisory_length": true,
       "required": true,
       "min_length": 50,
       "max_length": 160,
@@ -171,7 +176,7 @@
   },
 
   "filenames": {
-    "$comment": "القسم 12.2: قيود صارمة على أسماء الملفات",
+    "$comment": "القسم 12.2. منذ 2026-11 يُصلح prepare_content الاسم المخالف تلقائيًّا في النسخة المجهّزة (normalise_file_names)، فلا يحجز مقالًا؛ الرسالة تبقى للمعاينة.",
     "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$",
     "error_ar": "اسم الملف «{name}» غير مقبول. استخدم حروفاً إنجليزية صغيرة وأرقاماً وشرطات فقط، بلا مسافات."
   }

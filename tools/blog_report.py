@@ -104,6 +104,21 @@ def clean(text: str, limit: int = 300) -> str:
     return text[:limit] + ("…" if len(text) > limit else "")
 
 
+def warning_lines(article: dict, limit: int = 3) -> list[str]:
+    """تنبيهات لا تحجز (2026-11): المقال منشور، وهذه اقتراحات للكاتب."""
+    seen: list[str] = []
+    for item in article.get("warnings") or []:
+        text = clean(item.get("message", ""), 200)
+        if text and text not in seen:
+            seen.append(text)
+    return seen[:limit]
+
+
+def renamed_files(article: dict) -> list[str]:
+    return [note.split(":", 1)[1] for note in article.get("notes", [])
+            if note.startswith("file-renamed:")]
+
+
 def device_offset(article: dict) -> str:
     for note in article.get("notes", []):
         if note.startswith("device-offset:"):
@@ -172,6 +187,16 @@ def attention(bundle: dict) -> list[dict]:
                                     "المحتوى. الحذف ليس مسارًا تحريريًّا (الأرشفة هي البديل) — تحقّق.",
                               "en": f"/blog/{page}/ removed: its bundle is no longer in blog-content."})
     outcomes = bundle.get("outcomes") or {}
+    # schedule_check.py يكتب هذه العبارة حين يجد محتوى محفوظًا لم يُبنَ: إشارة
+    # الحفظ من blog-content لم تصل. في نوفمبر 2026 انتهى BUILD_TRIGGER_TOKEN
+    # فضاعت كل الإشارات أسبوعًا والمقالات تتأخر ساعات، ولم يعلم أحد.
+    if "إشارة الحفظ لم تصل" in str(outcomes.get("trigger", "")):
+        items.append({"key": "signal-missed", "who": "owner",
+                      "ar": "⚠️ حفظ الكاتب لم يُطلق النشر مباشرة، فنُشر عبر الفحص الدوري متأخرًا. "
+                            "السبب الأرجح انتهاء المفتاح BUILD_TRIGGER_TOKEN في إعدادات blog-content "
+                            "(Settings ← Secrets and variables ← Actions). جدّده؛ وحتى ذلك تتأخر "
+                            "التعديلات ساعات.",
+                      "en": "A content save did not trigger a build; BUILD_TRIGGER_TOKEN has likely expired."})
     if report and not report.get("fatal") and outcomes.get("job") == "failure":
         items.append({"key": "post-build-failure", "who": "owner",
                       "ar": "اجتاز البناء بوابات المحتوى، ثم فشلت خطوة بعده (الاستبدال أو حارس "
@@ -226,6 +251,9 @@ def article_rows(report: dict) -> list[str]:
             langs = art.get("published") or []
             new = [lang for lang in langs if lang not in (art.get("live_before") or [])]
             detail = "جديد على الموقع" if new else ""
+            tips = warning_lines(art, 2)
+            if tips:
+                detail = " — ".join(filter(None, [detail, "💡 " + " · ".join(tips)]))
         elif status == "missing":
             detail = "أُبلغ المالك"
         rows.append(f"| {clean(title_of(art), 80)}<br>`{art.get('slug')}` | "
@@ -265,6 +293,18 @@ def summary_markdown(bundle: dict) -> str:
     if writer:
         out += ["", "### للكاتب — ما المطلوب", ""]
         out += [f"- {i['ar']}" for i in writer]
+    tips = [(a, warning_lines(a)) for a in (report or {}).get("articles", [])
+            if a.get("status") == "published"]
+    tips = [(a, lines) for a, lines in tips if lines]
+    if tips:
+        out += ["", "### 💡 اقتراحات للكاتب — المقال منشور، ولا يلزم شيء", ""]
+        out += [f"- «{clean(title_of(a), 90)}»: " + " · ".join(lines) for a, lines in tips]
+    renames = [(a, renamed_files(a)) for a in (report or {}).get("articles", [])]
+    renames = [(a, names) for a, names in renames if names]
+    if renames:
+        out += ["", "> 🔧 صُحّحت أسماء ملفات تلقائيًا (ملفك في اللوحة لم يتغيّر): "
+                + "؛ ".join(f"`{a.get('slug')}`: " + "، ".join(clean(n, 80) for n in names)
+                           for a, names in renames)]
     offsets = sorted({device_offset(a) for a in (report or {}).get("articles", [])} - {""})
     if offsets:
         out += ["", f"> 📌 جهاز الكاتب يرسل التاريخ بمنطقة زمنية غير الرياض ({', '.join(offsets)}). "
@@ -509,12 +549,22 @@ def status_payload(bundle: dict) -> str:
         if art["status"] == "scheduled":
             entry["w"] = min((art.get("dates") or {}).values() or [""])
         data["a"].append(entry)
+    # منشور مع اقتراحات: قسم مستقل في اللوحة لا يُحسب «يحتاج انتباهًا».
+    for art in sorted(report.get("articles", []), key=lambda a: a.get("slug", "")):
+        lines = warning_lines(art, 3)
+        if art.get("status") == "published" and lines:
+            data.setdefault("h", []).append({
+                "s": art.get("slug", ""), "n": title_of(art)[:90],
+                "l": art.get("langs", [])[:2], "h": [line[:220] for line in lines]})
 
     def encode(value: dict) -> str:
         raw = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
         return base64.b64encode(zlib.compress(raw, 9)).decode()
 
     text = encode(data)
+    while len(text) > STATUS_LIMIT and data.get("h"):
+        data["h"].pop()
+        text = encode(data)
     while len(text) > STATUS_LIMIT and data["a"]:
         data["a"].pop()
         data["more"] = data.get("more", 0) + 1
@@ -542,6 +592,7 @@ def outcomes_from_env() -> dict:
         "live": os.environ.get("LIVE_OUTCOME", ""),
         "indexnow": os.environ.get("INDEXNOW_OUTCOME", ""),
         "pushed": os.environ.get("PUSHED_SHA", ""),
+        "trigger": os.environ.get("BUILD_REASON", ""),
         "run_url": f"{server}/{repo}/actions/runs/{run_id}" if repo and run_id else "",
     }
 
